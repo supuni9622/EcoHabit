@@ -76,3 +76,36 @@ cd EcoHabit
 
 # Install dependencies
 npm install
+
+```
+
+### Firebase Setup
+
+1. Create a Firebase project: ![Firebase Console](https://console.firebase.google.com/?pli=1) 
+
+2. Enable Authentication, Firestore, and Functions
+
+3. Add your Firebase config to web and mobile projects
+
+### 🤝 Contributing
+
+We welcome contributions! Please:
+
+1. Fork the repo
+
+2. Follow spec-driven development workflow
+
+3. Submit issues or pull requests with clear descriptions
+
+### 🙏 Acknowledgements
+
+![Hero UI](https://www.heroui.com/) 
+![Three.js](https://threejs.org/) 
+![Sketchfab MCP](https://mcp.so/server/sketchfab-mcp-server) 
+
+## 🌐 Live Demo
+
+Web: (Add URL if deployed)
+
+Mobile: (Add Expo QR link if deployed)
+
