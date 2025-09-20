@@ -81,7 +81,7 @@ npm install
 
 ### Firebase Setup
 
-1. Create a Firebase project: ![Firebase Console](https://console.firebase.google.com/?pli=1) 
+1. Create a Firebase project: [Firebase Console](https://console.firebase.google.com/?pli=1) 
 
 2. Enable Authentication, Firestore, and Functions
 
@@ -99,9 +99,9 @@ We welcome contributions! Please:
 
 ### 🙏 Acknowledgements
 
-![Hero UI](https://www.heroui.com/) 
-![Three.js](https://threejs.org/) 
-![Sketchfab MCP](https://mcp.so/server/sketchfab-mcp-server) 
+[Hero UI](https://www.heroui.com/) 
+[Three.js](https://threejs.org/) 
+[Sketchfab MCP](https://mcp.so/server/sketchfab-mcp-server) 
 
 ## 🌐 Live Demo
 
