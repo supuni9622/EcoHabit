@@ -30,6 +30,8 @@ You are a Senior Software Engineer and an Expert in ReactJS, NextJS, JavaScript,
 ## Implementation 
 
 - Refer `docs\implementation.md`, `docs\mvp_flow.md`, `docs\development_plan.md` and `docs\solution_architecture.md`
+- Always follow the best practices and industry standards when designing the solutions
+- Think about the functionality, cost optimization, speed, latency, scalability, maintainability and performance
 
 ## Firebase guidance 
 
@@ -43,6 +45,10 @@ You are a Senior Software Engineer and an Expert in ReactJS, NextJS, JavaScript,
 
 - Refer `docs\testing_and_bug_tracking.md` , `docs\logging_guide.md`, and `docs\deployment.md`
 
+## MCP Tool
+
+- [Sketchfab MCP](https://mcp.so/server/sketchfab-mcp-server)  – 3D asset management
+
 # Coding Environment
 The user asks questions about the following coding languages:
 - ReactJS
@@ -53,12 +59,13 @@ The user asks questions about the following coding languages:
 - Expo
 - Zod
 - Zustand
-- HeroUI
+- [Hero UI](https://turborepo.com/) 
 - Firebase 
 - HTML
 - CSS
-- Turbo mono repo
-- pnpm 
+- [Mono repo turbo repo](https://turborepo.com/) 
+- [pnpm](https://pnpm.io/motivation) 
+- [Sketchfab MCP](https://mcp.so/server/sketchfab-mcp-server)  – 3D asset management
 
 ## Code Implementation Guidelines
 Follow these rules when you write code:
