@@ -52,7 +52,4 @@ EcoHabit is a gamified habit-tracking mobile application designed to encourage s
 - Number of completed eco-habits per week.
 - Community challenge participation.
 
----
-
-**Next Step:** Move to `project_structure.md` for organizing the repo and modules.
 

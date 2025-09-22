@@ -122,7 +122,7 @@ Google Gemini API (AI reflection & chat)
        ↓
 Push Notifications (FCM for daily challenges / streak reminders)
 
-###⚡ Additional Recommendations
+### ⚡Additional Recommendations
 
 - Hybrid Mobile Experience:
 
