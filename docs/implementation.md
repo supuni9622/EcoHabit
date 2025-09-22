@@ -276,6 +276,66 @@ GitHub Actions → CI/CD pipelines
 
 ---
 
+## Development Workflow
+
+### Branch Structure
+- `main`: Production-ready code
+- `develop`: Integration branch
+- `feature/*`: Feature development branches
+- `hotfix/*`: Production hotfixes
+
+### Code Organization Principles
+1. **Domain-Driven**: Organize by business domain, not technical layers
+2. **Separation of Concerns**: Clear boundaries between handlers, services, and data access
+3. **Shared Types**: Centralized type definitions prevent drift between frontend/backend
+4. **Consistent Naming**: Follow established conventions across all packages
+5. **Modular Architecture**: Each domain should be independently testable and deployable
+
+---
+
+
+## Naming Conventions
+
+### File Naming
+- **Components**: PascalCase (e.g., `CustomerList.tsx`)
+- **Handlers**: kebab-case with domain prefix (e.g., `customer.get.handler.ts`)
+- **Services**: PascalCase with Service suffix (e.g., `CustomerService.ts`)
+- **Types**: kebab-case (e.g., `customer.types.ts`)
+- **Utils**: kebab-case (e.g., `date.utils.ts`)
+
+### Directory Organization
+- Group by domain/feature rather than technical layer
+- Use plural names for collections (e.g., `handlers/`, `components/`)
+- Separate concerns: handlers, services, types, utils
+
+## Import Path Conventions
+
+### Backend Imports
+```typescript
+// Absolute imports from src root
+import { CustomerService } from 'lib/services/customer.service';
+import { AuthMiddleware } from 'middlewares/auth.provider';
+import { CustomerHandler } from 'handlers/customer/customer.get.handler';
+```
+
+### Frontend Imports
+```typescript
+// Relative imports for local components
+import { Button } from '../ui/button';
+import { CustomerList } from './CustomerList';
+
+// Absolute imports for services and utilities
+import { CustomerService } from '@/services/CustomerService';
+import { useAuthStore } from '@/store/useAuthStore';
+```
+
+### Shared Types Imports
+```typescript
+// Import from published package
+import { CustomerSchema, CampaignModel } from '@shoutout-labs/market_buzz_crm_types';
+
+---
+
 ✅ This ensures **MVP is fast and low-cost (Expo)**, but we’re **future-proofed with Flutter** as a scaling option.
 
 
