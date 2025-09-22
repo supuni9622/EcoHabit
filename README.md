@@ -63,7 +63,7 @@
 ### Prerequisites
 
 - Node.js v18+  
-- npm or yarn  
+- pnpm
 - Expo CLI (`npm install -g expo-cli`)  
 - Firebase account  
 
