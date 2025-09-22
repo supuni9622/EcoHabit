@@ -267,7 +267,7 @@ GitHub Actions → CI/CD pipelines
 - Daily eco-lessons could include lightweight 3D animations (plastic floating in ocean → user action removes it).
 - Makes content immersive and emotionally stronger.
 
-###⚡ Deployment Note
+### ⚡ Deployment Note
 
 - For MVP: use static lightweight 3D assets (GLTF/GLB models) → keep Firebase Hosting costs low.
 - For scale: offload heavy 3D rendering to Sketchfab MCP server and fetch models dynamically.

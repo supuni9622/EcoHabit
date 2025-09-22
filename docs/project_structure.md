@@ -13,7 +13,7 @@ EcoHabit/
 ├── apps/
 │   ├── web/                          # Next.js PWA (Primary web app)
 │   │   ├── components/
-│   │   │   ├── ui/                   # shadcn/ui components
+│   │   │   ├── ui/                   # HeroUI/ui components
 │   │   │   │   ├── alert.tsx
 │   │   │   │   ├── badge.tsx
 │   │   │   │   ├── button.tsx
