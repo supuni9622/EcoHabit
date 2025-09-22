@@ -49,6 +49,10 @@ You are a Senior Software Engineer and an Expert in ReactJS, NextJS, JavaScript,
 
 - [Sketchfab MCP](https://mcp.so/server/sketchfab-mcp-server)  – 3D asset management
 
+## Contents
+
+- Refer `docs\lessons_content.md`
+
 # Coding Environment
 The user asks questions about the following coding languages:
 - ReactJS
