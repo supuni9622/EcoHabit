@@ -3,41 +3,379 @@
 ## 1. Repository Layout
 ```
 EcoHabit/
-├── frontend/              # Next.js (with Tailwind + HeroUI)
-│   ├── components/        # Reusable UI components
-│   ├── pages/             # Next.js pages
-│   ├── hooks/             # Custom React hooks
-│   ├── styles/            # Global styles, Tailwind config
-│   └── public/            # Static assets
+├── .github/
+│   └── workflows/
+│       ├── ci.yml                    # Main CI pipeline
+│       ├── deploy-web.yml            # Deploy web app
+│       ├── deploy-functions.yml      # Deploy Firebase functions
+│       └── test.yml                  # Test runner
 │
-├── mobile/                # Expo mobile app (React Native)
-│   ├── lib/
-│   │   ├── screens/       # UI screens
-│   │   ├── widgets/       # Reusable widgets
-│   │   ├── services/      # Firebase, Gemini API integration
-│   │   ├── providers/     # State management
-│   │   └── utils/         # Helpers, constants
-│   └── assets/            # Images, icons
+├── apps/
+│   ├── web/                          # Next.js PWA (Primary web app)
+│   │   ├── components/
+│   │   │   ├── ui/                   # shadcn/ui components
+│   │   │   │   ├── alert.tsx
+│   │   │   │   ├── badge.tsx
+│   │   │   │   ├── button.tsx
+│   │   │   │   ├── card.tsx
+│   │   │   │   ├── dialog.tsx
+│   │   │   │   ├── progress.tsx
+│   │   │   │   └── index.ts
+│   │   │   ├── layout/
+│   │   │   │   ├── header.tsx
+│   │   │   │   ├── navigation.tsx
+│   │   │   │   ├── footer.tsx
+│   │   │   │   └── sidebar.tsx
+│   │   │   ├── gamification/
+│   │   │   │   ├── streak-counter.tsx
+│   │   │   │   ├── points-display.tsx
+│   │   │   │   ├── badge-collection.tsx
+│   │   │   │   ├── progress-meter.tsx
+│   │   │   │   ├── leaderboard.tsx
+│   │   │   │   ├── confetti-celebration.tsx
+│   │   │   │   └── level-progress.tsx
+│   │   │   ├── habits/
+│   │   │   │   ├── habit-card.tsx
+│   │   │   │   ├── habit-logger.tsx
+│   │   │   │   ├── daily-challenge.tsx
+│   │   │   │   ├── waste-type-selector.tsx
+│   │   │   │   └── habit-streak-display.tsx
+│   │   │   ├── lessons/
+│   │   │   │   ├── lesson-card.tsx
+│   │   │   │   ├── story-carousel.tsx
+│   │   │   │   ├── micro-lesson.tsx
+│   │   │   │   ├── interactive-quiz.tsx
+│   │   │   │   └── reflection-prompt.tsx
+│   │   │   ├── ai-chat/
+│   │   │   │   ├── chat-interface.tsx
+│   │   │   │   ├── chat-message.tsx
+│   │   │   │   ├── typing-indicator.tsx
+│   │   │   │   └── reflection-bot.tsx
+│   │   │   ├── maps/
+│   │   │   │   ├── recycler-map.tsx
+│   │   │   │   ├── location-marker.tsx
+│   │   │   │   └── directions-panel.tsx
+│   │   │   ├── dashboard/
+│   │   │   │   ├── impact-summary.tsx
+│   │   │   │   ├── daily-overview.tsx
+│   │   │   │   ├── stats-widget.tsx
+│   │   │   │   └── achievement-showcase.tsx
+│   │   │   ├── community/
+│   │   │   │   ├── community-challenges.tsx
+│   │   │   │   ├── friend-list.tsx
+│   │   │   │   └── social-feed.tsx
+│   │   │   ├── profile/
+│   │   │   │   ├── user-profile.tsx
+│   │   │   │   ├── avatar-selector.tsx
+│   │   │   │   ├── settings-panel.tsx
+│   │   │   │   └── preference-manager.tsx
+│   │   │   ├── animations/
+│   │   │   │   ├── three-avatar.tsx
+│   │   │   │   ├── eco-world-scene.tsx
+│   │   │   │   ├── trophy-room.tsx
+│   │   │   │   └── particle-effects.tsx
+│   │   │   └── common/
+│   │   │       ├── loading-spinner.tsx
+│   │   │       ├── error-boundary.tsx
+│   │   │       ├── image-optimizer.tsx
+│   │   │       └── pwa-prompt.tsx
+│   │   ├── pages/
+│   │   │   ├── _app.tsx
+│   │   │   ├── _document.tsx
+│   │   │   ├── index.tsx             # Home dashboard
+│   │   │   ├── onboarding/
+│   │   │   │   ├── index.tsx         # Welcome screen
+│   │   │   │   ├── goals.tsx         # Goal setting
+│   │   │   │   ├── preferences.tsx   # Waste categories
+│   │   │   │   └── tutorial.tsx      # App tutorial
+│   │   │   ├── dashboard/
+│   │   │   │   └── index.tsx         # Main dashboard
+│   │   │   ├── habits/
+│   │   │   │   ├── index.tsx         # Habit overview
+│   │   │   │   ├── log.tsx           # Log actions
+│   │   │   │   └── [id].tsx          # Individual habit
+│   │   │   ├── lessons/
+│   │   │   │   ├── index.tsx         # Lesson library
+│   │   │   │   ├── [day].tsx         # Daily lessons
+│   │   │   │   └── story/[id].tsx    # Story view
+│   │   │   ├── challenges/
+│   │   │   │   ├── index.tsx         # Challenge overview
+│   │   │   │   ├── daily.tsx         # Daily challenges
+│   │   │   │   └── community.tsx     # Community challenges
+│   │   │   ├── leaderboard/
+│   │   │   │   └── index.tsx
+│   │   │   ├── profile/
+│   │   │   │   ├── index.tsx         # User profile
+│   │   │   │   ├── settings.tsx      # App settings
+│   │   │   │   └── achievements.tsx  # Badge collection
+│   │   │   ├── map/
+│   │   │   │   └── index.tsx         # Recycler locator
+│   │   │   ├── chat/
+│   │   │   │   └── index.tsx         # AI chat interface
+│   │   │   └── api/
+│   │   │       ├── auth/
+│   │   │       │   └── [...nextauth].ts
+│   │   │       ├── habits/
+│   │   │       │   ├── log.ts
+│   │   │       │   └── streak.ts
+│   │   │       ├── gamification/
+│   │   │       │   ├── points.ts
+│   │   │       │   ├── badges.ts
+│   │   │       │   └── leaderboard.ts
+│   │   │       ├── ai/
+│   │   │       │   └── chat.ts       # Gemini API proxy
+│   │   │       ├── lessons/
+│   │   │       │   └── [day].ts
+│   │   │       └── users/
+│   │   │           └── profile.ts
+│   │   ├── lib/
+│   │   │   ├── firebase/
+│   │   │   │   ├── config.ts         # Firebase configuration
+│   │   │   │   ├── auth.ts           # Auth helpers
+│   │   │   │   ├── firestore.ts      # Firestore helpers
+│   │   │   │   └── storage.ts        # Storage helpers
+│   │   │   ├── hooks/
+│   │   │   │   ├── use-auth.ts
+│   │   │   │   ├── use-habits.ts
+│   │   │   │   ├── use-gamification.ts
+│   │   │   │   ├── use-lessons.ts
+│   │   │   │   ├── use-streak.ts
+│   │   │   │   └── use-ai-chat.ts
+│   │   │   ├── services/
+│   │   │   │   ├── gamification.ts   # Points, badges logic
+│   │   │   │   ├── habits.ts         # Habit tracking
+│   │   │   │   ├── lessons.ts        # Lesson management
+│   │   │   │   ├── ai-chat.ts        # Gemini integration
+│   │   │   │   ├── notifications.ts  # FCM integration
+│   │   │   │   └── analytics.ts      # Event tracking
+│   │   │   ├── utils/
+│   │   │   │   ├── date.ts
+│   │   │   │   ├── points.ts
+│   │   │   │   ├── streak.ts
+│   │   │   │   ├── format.ts
+│   │   │   │   └── validation.ts
+│   │   │   ├── constants/
+│   │   │   │   ├── badges.ts
+│   │   │   │   ├── challenges.ts
+│   │   │   │   ├── lessons.ts
+│   │   │   │   └── waste-types.ts
+│   │   │   └── types/
+│   │   │       ├── user.ts
+│   │   │       ├── habit.ts
+│   │   │       ├── gamification.ts
+│   │   │       ├── lesson.ts
+│   │   │       └── ai-chat.ts
+│   │   ├── styles/
+│   │   │   ├── globals.css
+│   │   │   └── components.css
+│   │   ├── public/
+│   │   │   ├── manifest.json
+│   │   │   ├── sw.js                 # Service worker
+│   │   │   ├── icons/                # PWA icons
+│   │   │   ├── images/
+│   │   │   │   ├── lessons/          # Lesson images
+│   │   │   │   ├── badges/           # Badge assets
+│   │   │   │   └── wildlife/         # Wildlife photos
+│   │   │   └── 3d-models/            # Three.js assets
+│   │   ├── next.config.js
+│   │   ├── tailwind.config.js
+│   │   ├── tsconfig.json
+│   │   ├── package.json
+│   │   └── .env.example
+│   │
+│   ├── mobile/                       # Expo React Native app
+│   │   ├── app/
+│   │   │   ├── (tabs)/
+│   │   │   │   ├── index.tsx         # Home
+│   │   │   │   ├── habits.tsx        # Habits tab
+│   │   │   │   ├── lessons.tsx       # Lessons tab
+│   │   │   │   ├── map.tsx           # Map tab
+│   │   │   │   └── profile.tsx       # Profile tab
+│   │   │   ├── onboarding/
+│   │   │   │   ├── index.tsx
+│   │   │   │   ├── goals.tsx
+│   │   │   │   └── tutorial.tsx
+│   │   │   ├── chat/
+│   │   │   │   └── index.tsx
+│   │   │   ├── challenges/
+│   │   │   │   └── [id].tsx
+│   │   │   └── _layout.tsx
+│   │   ├── components/
+│   │   │   ├── ui/                   # Shared UI components
+│   │   │   ├── gamification/         # Mobile gamification components
+│   │   │   ├── habits/               # Habit-related components
+│   │   │   ├── lessons/              # Lesson components
+│   │   │   └── common/               # Common mobile components
+│   │   ├── lib/
+│   │   │   ├── firebase/             # Firebase mobile setup
+│   │   │   ├── hooks/                # Mobile-specific hooks
+│   │   │   ├── services/             # Shared with web via packages
+│   │   │   └── utils/                # Mobile utilities
+│   │   ├── assets/
+│   │   │   ├── images/
+│   │   │   ├── icons/
+│   │   │   └── fonts/
+│   │   ├── app.json
+│   │   ├── expo-env.d.ts
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   │
+│   └── admin/                        # Optional admin panel (Next.js)
+│       ├── pages/
+│       │   ├── index.tsx             # Admin dashboard
+│       │   ├── users.tsx             # User management
+│       │   ├── lessons.tsx           # Content management
+│       │   ├── challenges.tsx        # Challenge management
+│       │   └── analytics.tsx         # Analytics dashboard
+│       ├── components/
+│       │   ├── charts/               # Analytics charts
+│       │   ├── tables/               # Data tables
+│       │   └── forms/                # Admin forms
+│       ├── lib/
+│       │   ├── firebase-admin/       # Admin SDK
+│       │   └── analytics/            # Analytics processing
+│       ├── package.json
+│       └── tsconfig.json
 │
-├── backend/               # Serverless functions (Firebase Cloud Functions)
-│   ├── auth/              # Authentication triggers
-│   ├── notifications/     # Scheduled pushes
-│   ├── gamification/      # Points, streaks, leaderboards
-│   └── ai/                # Gemini API proxy handlers
+├── packages/                         # Shared packages
+│   ├── ui/                          # Shared UI components (shadcn/ui based)
+│   │   ├── src/
+│   │   │   ├── components/
+│   │   │   │   ├── badge.tsx
+│   │   │   │   ├── button.tsx
+│   │   │   │   ├── card.tsx
+│   │   │   │   ├── progress.tsx
+│   │   │   │   └── index.ts
+│   │   │   └── lib/
+│   │   │       └── utils.ts
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   │
+│   ├── shared/                      # Shared business logic
+│   │   ├── src/
+│   │   │   ├── types/
+│   │   │   │   ├── user.ts
+│   │   │   │   ├── habit.ts
+│   │   │   │   ├── gamification.ts
+│   │   │   │   ├── lesson.ts
+│   │   │   │   └── index.ts
+│   │   │   ├── utils/
+│   │   │   │   ├── date.ts
+│   │   │   │   ├── points-calculator.ts
+│   │   │   │   ├── streak-manager.ts
+│   │   │   │   ├── badge-engine.ts
+│   │   │   │   └── validation.ts
+│   │   │   ├── constants/
+│   │   │   │   ├── badges.ts
+│   │   │   │   ├── challenges.ts
+│   │   │   │   ├── lessons.ts
+│   │   │   │   ├── waste-types.ts
+│   │   │   │   └── gamification.ts
+│   │   │   └── services/
+│   │   │       ├── gamification-engine.ts
+│   │   │       ├── habit-tracker.ts
+│   │   │       └── lesson-manager.ts
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   │
+│   ├── firebase/                    # Firebase utilities
+│   │   ├── src/
+│   │   │   ├── config/
+│   │   │   │   ├── firebase-config.ts
+│   │   │   │   └── collections.ts
+│   │   │   ├── auth/
+│   │   │   │   ├── auth-service.ts
+│   │   │   │   └── auth-guards.ts
+│   │   │   ├── firestore/
+│   │   │   │   ├── users.ts
+│   │   │   │   ├── habits.ts
+│   │   │   │   ├── lessons.ts
+│   │   │   │   ├── gamification.ts
+│   │   │   │   └── analytics.ts
+│   │   │   ├── storage/
+│   │   │   │   └── storage-service.ts
+│   │   │   └── messaging/
+│   │   │       └── fcm-service.ts
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   │
+│   └── eslint-config/               # Shared ESLint config
+│       ├── index.js
+│       └── package.json
 │
-├── firestore_rules/       # Firestore security rules
-├── storage_rules/         # Firebase storage rules
-├── tests/                 # Integration and unit tests
-├── docs/                  # Documentation (.md files)
-│   ├── requirements.md
-│   ├── project_structure.md
-│   ├── implementation.md
-│   ├── ui_ux.md
-│   ├── testing_and_bug_tracking.md
-│   ├── deployment.md
-│   └── lesson_plans.md
+├── functions/                       # Firebase Cloud Functions
+│   ├── src/
+│   │   ├── triggers/
+│   │   │   ├── auth/
+│   │   │   │   ├── on-user-create.ts
+│   │   │   │   └── on-user-delete.ts
+│   │   │   ├── habits/
+│   │   │   │   ├── on-habit-log.ts   # Update streaks, points
+│   │   │   │   └── daily-streak-reset.ts
+│   │   │   ├── gamification/
+│   │   │   │   ├── badge-unlock.ts
+│   │   │   │   ├── level-up.ts
+│   │   │   │   └── leaderboard-update.ts
+│   │   │   └── notifications/
+│   │   │       ├── daily-reminder.ts
+│   │   │       ├── streak-alert.ts
+│   │   │       └── challenge-notification.ts
+│   │   ├── api/
+│   │   │   ├── ai/
+│   │   │   │   └── gemini-chat.ts    # Gemini API proxy
+│   │   │   ├── gamification/
+│   │   │   │   ├── calculate-points.ts
+│   │   │   │   └── check-badges.ts
+│   │   │   └── analytics/
+│   │   │       └── track-events.ts
+│   │   ├── scheduled/
+│   │   │   ├── daily-challenges.ts   # Generate daily challenges
+│   │   │   ├── weekly-summary.ts     # Weekly progress emails
+│   │   │   └── cleanup-old-data.ts   # Data maintenance
+│   │   ├── utils/
+│   │   │   ├── firebase-admin.ts
+│   │   │   ├── gemini-client.ts
+│   │   │   ├── fcm-client.ts
+│   │   │   └── validation.ts
+│   │   └── index.ts
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── .env.example
 │
-└── ci_cd/                 # GitHub Actions workflows, Firebase deploy scripts
+├── firebase/                        # Firebase configuration
+│   ├── firestore.rules
+│   ├── storage.rules
+│   ├── firestore.indexes.json
+│   ├── firebase.json
+│   └── .firebaserc
+│
+├── docs/                           # Documentation
+│   ├── api/                        # API documentation
+│   ├── deployment/                 # Deployment guides
+│   ├── development/                # Development setup
+│   └── architecture/               # Architecture diagrams
+│
+├── scripts/                        # Build and deployment scripts
+│   ├── build.sh
+│   ├── deploy.sh
+│   ├── setup-env.sh
+│   └── seed-data.js               # Initial data seeding
+│
+├── tests/                          # Cross-app testing
+│   ├── e2e/                       # End-to-end tests
+│   │   ├── cypress/
+│   │   └── playwright/
+│   ├── integration/               # Integration tests
+│   └── performance/               # Performance tests
+│
+├── .github/
+├── .gitignore
+├── .env.example
+├── package.json                   # Root package.json
+├── turbo.json                     # Turborepo configuration
+├── tsconfig.json                  # Root TypeScript config
+├── README.md
+└── LICENSE
 ```
 
 ## 2. Data Models
