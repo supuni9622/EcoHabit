@@ -57,6 +57,8 @@ The user asks questions about the following coding languages:
 - Firebase 
 - HTML
 - CSS
+- Turbo mono repo
+- pnpm 
 
 ## Code Implementation Guidelines
 Follow these rules when you write code:
