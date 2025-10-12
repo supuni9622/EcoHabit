@@ -430,7 +430,4 @@ EcoHabit/
 - **Analytics**: Usage stats, eco-impact reports.
 - **Content Engine**: Lesson plans, tips, and articles.
 
----
-
-**Next Step:** Move to `implementation.md` for setup, stack, and stages.
 
