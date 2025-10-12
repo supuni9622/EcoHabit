@@ -1,5 +1,7 @@
+import { Badge } from '../types';
+
 // Point values for different waste types
-export const POINT_VALUES = {
+export const POINT_VALUES: Record<string, number> = {
   plastic: 10,
   paper: 8,
   'e-waste': 15,
@@ -8,10 +10,10 @@ export const POINT_VALUES = {
   metal: 14,
   textile: 6,
   other: 3,
-} as const;
+};
 
 // Badge requirements and rewards
-export const BADGE_REQUIREMENTS = [
+export const BADGE_REQUIREMENTS: Badge[] = [
   {
     id: 'first_step',
     name: 'First Step',
@@ -23,7 +25,7 @@ export const BADGE_REQUIREMENTS = [
     },
     rewards: {
       points: 50,
-      features: ['basic_avatar'],
+      features: ['basic_avatar'] as string[],
     },
   },
   {
@@ -38,7 +40,7 @@ export const BADGE_REQUIREMENTS = [
     },
     rewards: {
       points: 100,
-      features: ['plastic_avatar_accessory'],
+      features: ['plastic_avatar_accessory'] as string[],
     },
   },
   {
@@ -52,7 +54,7 @@ export const BADGE_REQUIREMENTS = [
     },
     rewards: {
       points: 200,
-      features: ['streak_animation'],
+      features: ['streak_animation'] as string[],
     },
   },
   {
@@ -66,7 +68,7 @@ export const BADGE_REQUIREMENTS = [
     },
     rewards: {
       points: 500,
-      features: ['warrior_avatar', 'special_animations'],
+      features: ['warrior_avatar', 'special_animations'] as string[],
     },
   },
   {
@@ -81,7 +83,7 @@ export const BADGE_REQUIREMENTS = [
     },
     rewards: {
       points: 1000,
-      features: ['legendary_avatar', 'all_animations', 'special_title'],
+      features: ['legendary_avatar', 'all_animations', 'special_title'] as string[],
       title: 'Eco Guardian',
     },
   },

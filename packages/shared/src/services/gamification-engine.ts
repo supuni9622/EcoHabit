@@ -126,7 +126,7 @@ export class GamificationEngine {
    * Get impact factors for waste type
    */
   private static getImpactFactors(wasteType: string) {
-    const factors = {
+    const factors: Record<string, { co2PerKg: number; waterPerItem: number; wildlifePerItem: number; treesPerItem: number }> = {
       plastic: { co2PerKg: 2.5, waterPerItem: 0.5, wildlifePerItem: 0.1, treesPerItem: 0.05 },
       paper: { co2PerKg: 1.2, waterPerItem: 0.3, wildlifePerItem: 0.05, treesPerItem: 0.1 },
       'e-waste': { co2PerKg: 5.0, waterPerItem: 1.0, wildlifePerItem: 0.2, treesPerItem: 0.15 },

@@ -8,6 +8,8 @@ export interface User {
   totalPoints: number;
   currentStreak: number;
   badges: string[];
+  habits?: HabitLog[];
+  completedLessons?: string[];
   preferences: UserPreferences;
   createdAt: Date;
   updatedAt: Date;
