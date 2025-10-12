@@ -1,0 +1,56 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can read and write their own data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Habit logs are user-specific
+    match /habitLogs/{logId} {
+      allow read, write: if request.auth != null && 
+        resource.data.userId == request.auth.uid;
+    }
+    
+    // Lessons are public read-only
+    match /lessons/{lessonId} {
+      allow read: if true;
+      allow write: if request.auth != null && 
+        request.auth.token.admin == true;
+    }
+    
+    // Badges are public read-only
+    match /badges/{badgeId} {
+      allow read: if true;
+      allow write: if request.auth != null && 
+        request.auth.token.admin == true;
+    }
+    
+    // Leaderboard is public read-only
+    match /leaderboard/{entryId} {
+      allow read: if true;
+      allow write: if request.auth != null && 
+        request.auth.token.admin == true;
+    }
+    
+    // Analytics are user-specific
+    match /analytics/{analyticsId} {
+      allow read, write: if request.auth != null && 
+        resource.data.userId == request.auth.uid;
+    }
+    
+    // Community posts are public read, user write
+    match /communityPosts/{postId} {
+      allow read: if true;
+      allow write: if request.auth != null && 
+        resource.data.userId == request.auth.uid;
+    }
+    
+    // Recycling locations are public read-only
+    match /recyclingLocations/{locationId} {
+      allow read: if true;
+      allow write: if request.auth != null && 
+        request.auth.token.admin == true;
+    }
+  }
+}
