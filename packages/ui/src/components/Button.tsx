@@ -4,6 +4,7 @@ import { cn } from '../lib/utils';
 export interface ButtonProps {
   children: React.ReactNode;
   onClick?: () => void;
+  type?: 'button' | 'submit' | 'reset';
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
   disabled?: boolean;
@@ -14,6 +15,7 @@ export interface ButtonProps {
 export const Button: React.FC<ButtonProps> = ({
   children,
   onClick,
+  type = 'button',
   variant = 'primary',
   size = 'md',
   disabled = false,
@@ -37,6 +39,7 @@ export const Button: React.FC<ButtonProps> = ({
   
   return (
     <button
+      type={type}
       className={cn(
         baseStyles,
         variantStyles[variant],
