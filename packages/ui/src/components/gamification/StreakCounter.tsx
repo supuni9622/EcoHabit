@@ -28,7 +28,7 @@ export const StreakCounter: React.FC<StreakCounterProps> = ({
           {streak}
         </span>
         {showLabel && (
-          <span className="text-xs text-muted-foreground">Day Streak</span>
+          <span className="text-xs text-gray-500">Day Streak</span>
         )}
       </div>
     </div>

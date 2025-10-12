@@ -24,11 +24,11 @@ export const PointsDisplay: React.FC<PointsDisplayProps> = ({
     <div className={cn('flex items-center gap-2', className)}>
       <span className="text-2xl">⭐</span>
       <div className="flex flex-col">
-        <span className={cn('font-bold text-primary', sizeStyles[size])}>
+        <span className={cn('font-bold text-green-600', sizeStyles[size])}>
           {points.toLocaleString()}
         </span>
         {showLabel && (
-          <span className="text-xs text-muted-foreground">Points</span>
+          <span className="text-xs text-gray-500">Points</span>
         )}
       </div>
     </div>

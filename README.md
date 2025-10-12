@@ -159,7 +159,127 @@ The web app is built with Next.js 14+ and includes:
 - PWA capabilities
 - Service worker
 
-### Development Server
+### Step-by-Step Guide to Run the Web Application
+
+#### Prerequisites
+Before running the web application, ensure you have:
+- Node.js 18+ installed
+- pnpm package manager installed
+- Git installed
+
+#### Step 1: Clone and Setup
+```bash
+# Clone the repository
+git clone https://github.com/your-username/ecohabit.git
+cd ecohabit
+
+# Install pnpm if you don't have it
+npm install -g pnpm
+```
+
+#### Step 2: Install Dependencies
+```bash
+# Install all dependencies for the monorepo
+pnpm install
+```
+
+#### Step 3: Build Shared Packages
+```bash
+# Build shared packages first (required for web app)
+pnpm build --filter=@ecohabit/shared
+pnpm build --filter=@ecohabit/ui
+```
+
+#### Step 4: Set Up Environment Variables
+```bash
+# Copy the example environment file
+cp env.example .env.local
+
+# Edit .env.local with your configuration
+# You'll need to add your Firebase configuration
+```
+
+#### Step 5: Start the Web Application
+
+**Option A: Start from root directory**
+```bash
+# Start the web app from the monorepo root
+pnpm dev --filter=web
+```
+
+**Option B: Start from web app directory**
+```bash
+# Navigate to the web app directory
+cd apps/web
+
+# Start the development server
+pnpm dev
+```
+
+#### Step 6: Access the Application
+1. Open your browser
+2. Navigate to `http://localhost:3000`
+3. You should see the EcoHabit web application
+
+#### Step 7: Development Workflow
+```bash
+# To run all apps simultaneously
+pnpm dev
+
+# To run only the web app
+pnpm dev --filter=web
+
+# To build the web app for production
+pnpm build --filter=web
+
+# To run linting
+pnpm lint --filter=web
+
+# To run type checking
+pnpm type-check --filter=web
+```
+
+#### Troubleshooting
+
+**Issue: Port 3000 already in use**
+```bash
+# Kill any process using port 3000
+npx kill-port 3000
+
+# Or start on a different port
+cd apps/web
+pnpm dev -- -p 3001
+```
+
+**Issue: Shared packages not found**
+```bash
+# Make sure shared packages are built
+pnpm build --filter=@ecohabit/shared
+pnpm build --filter=@ecohabit/ui
+
+# Or build all packages
+pnpm build
+```
+
+**Issue: TypeScript errors**
+```bash
+# Run type checking to see specific errors
+pnpm type-check --filter=web
+
+# Clean and rebuild
+pnpm clean
+pnpm install
+pnpm build
+```
+
+**Issue: TailwindCSS not working**
+```bash
+# Make sure TailwindCSS is properly configured
+# Check apps/web/tailwind.config.js exists
+# Check apps/web/app/globals.css imports Tailwind
+```
+
+#### Development Server
 
 ```bash
 cd apps/web
@@ -167,6 +287,28 @@ pnpm dev
 ```
 
 Visit `http://localhost:3000` to see the web app.
+
+#### Available Scripts for Web App
+
+```bash
+# Development
+pnpm dev                    # Start development server
+pnpm dev --filter=web      # Start only web app
+
+# Building
+pnpm build                  # Build for production
+pnpm build --filter=web    # Build only web app
+
+# Linting and Type Checking
+pnpm lint --filter=web     # Lint web app
+pnpm type-check --filter=web # Type check web app
+
+# Testing
+pnpm test --filter=web     # Run web app tests
+
+# Cleaning
+pnpm clean                 # Clean all build artifacts
+```
 
 ## 🧪 Testing
 
