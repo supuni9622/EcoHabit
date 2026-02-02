@@ -25,6 +25,26 @@ export * from './components/lessons/InteractiveQuiz';
 export * from './components/common/ErrorBoundary';
 export * from './components/common/ImageOptimizer';
 export * from './components/common/ResponsiveContainer';
+export * from './components/common/ProgressiveEnhancement';
+
+// Theme components
+export * from './components/theme/ThemeProvider';
+export * from './components/theme/ThemeToggle';
+
+// 3D components
+export * from './components/3d/ThreeScene';
+export * from './components/3d/EcoAvatar';
+export * from './components/3d/TrophyRoom';
+export * from './components/3d/ImpactVisualization';
+export * from './components/3d/Fallback2D';
+
+// Animation components
+export * from './components/animations/CSS3Animations';
+export * from './components/animations/LottieAnimation';
+
+// Hooks
+export * from './hooks/use3DOptimization';
 
 // Utils
 export * from './lib/utils';
+export * from './utils/3d-asset-loader';

@@ -214,3 +214,34 @@ export interface PaginatedResponse<T> {
     hasPrev: boolean;
   };
 }
+
+// Theme types
+export type ThemeMode = 'light' | 'dark';
+
+export interface ThemeConfig {
+  mode: ThemeMode;
+  systemPreference?: boolean;
+}
+
+// 3D Capability types
+export type PerformanceTier = 'high' | 'medium' | 'low';
+export type DeviceType = 'mobile' | 'tablet' | 'desktop';
+export type RenderStrategy = 'threejs' | 'css3d' | 'lottie' | 'fallback';
+
+export interface CapabilityInfo {
+  webglSupported: boolean;
+  webgl2Supported: boolean;
+  performanceTier: PerformanceTier;
+  deviceType: DeviceType;
+  renderStrategy: RenderStrategy;
+  css3DSupported: boolean;
+  hardwareAcceleration: boolean;
+}
+
+// Animation configuration types
+export interface AnimationConfig {
+  enabled: boolean;
+  quality: 'high' | 'medium' | 'low';
+  fps: number;
+  strategy: RenderStrategy;
+}

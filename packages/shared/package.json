@@ -12,7 +12,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "zod": "^3.22.0"
+    "zod": "^3.22.0",
+    "react": "^18.2.0"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
