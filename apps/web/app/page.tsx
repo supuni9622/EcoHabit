@@ -1,19 +1,25 @@
+'use client';
+
 import { Button } from '@ecohabit/ui';
 import { Card } from '@ecohabit/ui';
 import { PointsDisplay } from '@ecohabit/ui';
 import { StreakCounter } from '@ecohabit/ui';
+import { ThemeToggle } from '@ecohabit/ui';
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            🌱 EcoHabit
-          </h1>
-          <p className="text-xl text-gray-600 mb-8">
-            Transform your eco-friendly habits into an engaging journey
-          </p>
+        <div className="flex justify-between items-center mb-8">
+          <div className="text-center flex-1">
+            <h1 className="text-4xl font-bold text-foreground mb-4">
+              🌱 EcoHabit
+            </h1>
+            <p className="text-xl text-foreground-secondary mb-8">
+              Transform your eco-friendly habits into an engaging journey
+            </p>
+          </div>
+          <ThemeToggle />
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -58,7 +64,7 @@ export default function HomePage() {
         </div>
         
         <div className="text-center">
-          <p className="text-gray-500">
+          <p className="text-foreground-muted">
             Welcome to EcoHabit! Start your eco-friendly journey today.
           </p>
         </div>
