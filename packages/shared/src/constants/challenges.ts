@@ -87,7 +87,7 @@ export const DAILY_CHALLENGES: Challenge[] = [
   },
 ];
 
-export const WEEKLY_CHALLENGES: Challenge[] = [
+export const WEEKLY_CHALLENGE_TEMPLATES: Challenge[] = [
   {
     id: 'weekly_recycling_marathon',
     title: 'Recycling Marathon',

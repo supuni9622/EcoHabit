@@ -4,13 +4,17 @@ import { Badge } from '../types';
 export const POINT_VALUES: Record<string, number> = {
   plastic: 10,
   paper: 8,
-  'e-waste': 15,
+  'e-waste': 20,
   organic: 5,
   glass: 12,
   metal: 14,
   textile: 6,
-  other: 3,
+  general: 5,
+  other: 5,
 };
+
+// Daily cap for points
+export const DAILY_POINTS_CAP = 500;
 
 // Badge requirements and rewards
 export const BADGE_REQUIREMENTS: Badge[] = [
@@ -89,17 +93,17 @@ export const BADGE_REQUIREMENTS: Badge[] = [
   },
 ] as const;
 
-// Level requirements
+// Level requirements matching the documented thresholds
 export const LEVEL_REQUIREMENTS = [
   { level: 1, points: 0, title: 'Eco Beginner' },
-  { level: 2, points: 1000, title: 'Eco Explorer' },
-  { level: 3, points: 2500, title: 'Eco Enthusiast' },
-  { level: 4, points: 5000, title: 'Eco Warrior' },
-  { level: 5, points: 10000, title: 'Eco Champion' },
-  { level: 6, points: 20000, title: 'Eco Master' },
-  { level: 7, points: 35000, title: 'Eco Legend' },
-  { level: 8, points: 50000, title: 'Eco Guardian' },
-  { level: 9, points: 75000, title: 'Eco Hero' },
+  { level: 2, points: 500, title: 'Eco Explorer' },
+  { level: 3, points: 1500, title: 'Eco Enthusiast' },
+  { level: 4, points: 3000, title: 'Eco Warrior' },
+  { level: 5, points: 5000, title: 'Eco Champion' },
+  { level: 6, points: 10000, title: 'Eco Master' },
+  { level: 7, points: 20000, title: 'Eco Legend' },
+  { level: 8, points: 35000, title: 'Eco Guardian' },
+  { level: 9, points: 50000, title: 'Eco Hero' },
   { level: 10, points: 100000, title: 'Eco Legendary' },
 ] as const;
 
@@ -112,6 +116,73 @@ export const STREAK_MILESTONES = [
   { days: 60, title: 'Two Month Titan', points: 1000 },
   { days: 100, title: 'Century Streak', points: 2000 },
   { days: 365, title: 'Year Long Legend', points: 5000 },
+] as const;
+
+// Daily challenges rotating by day of week (0=Sunday, 1=Monday, ...)
+export const WEEKLY_CHALLENGES = [
+  {
+    id: 'sunday_reflection',
+    title: 'Reflection and Planning',
+    description: 'Reflect on your eco journey and plan your week ahead',
+    points: 30,
+    wasteType: 'general',
+    target: 1,
+    dayOfWeek: 0,
+  },
+  {
+    id: 'monday_plastic',
+    title: 'Recycle 3 Plastic Bottles',
+    description: 'Start your week strong by recycling plastic bottles',
+    points: 30,
+    wasteType: 'plastic',
+    target: 3,
+    dayOfWeek: 1,
+  },
+  {
+    id: 'tuesday_paper',
+    title: 'Sort Paper Recyclables',
+    description: 'Sort and recycle 5 paper items today',
+    points: 40,
+    wasteType: 'paper',
+    target: 5,
+    dayOfWeek: 2,
+  },
+  {
+    id: 'wednesday_ewaste',
+    title: 'Proper E-Waste Disposal',
+    description: 'Properly dispose of at least 1 electronic item',
+    points: 50,
+    wasteType: 'e-waste',
+    target: 1,
+    dayOfWeek: 3,
+  },
+  {
+    id: 'thursday_organic',
+    title: 'Compost Organic Waste',
+    description: 'Compost 3 organic waste items today',
+    points: 25,
+    wasteType: 'organic',
+    target: 3,
+    dayOfWeek: 4,
+  },
+  {
+    id: 'friday_plasticfree',
+    title: 'Plastic-Free Day',
+    description: 'Go plastic-free for the entire day',
+    points: 60,
+    wasteType: 'plastic',
+    target: 0,
+    dayOfWeek: 5,
+  },
+  {
+    id: 'saturday_cleanup',
+    title: 'Community Clean-Up',
+    description: 'Participate in or organize a local community clean-up',
+    points: 80,
+    wasteType: 'general',
+    target: 1,
+    dayOfWeek: 6,
+  },
 ] as const;
 
 // Daily challenge types
@@ -160,7 +231,7 @@ export const COMMUNITY_CHALLENGE_TYPES = [
     points: 500,
     requirements: {
       wasteTypes: ['plastic'],
-      actions: 0, // Zero plastic usage
+      actions: 0,
     },
   },
   {

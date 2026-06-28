@@ -2,14 +2,11 @@ const path = require('path');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    appDir: true,
-  },
   images: {
-    domains: ['firebasestorage.googleapis.com', 'images.unsplash.com'],
+    domains: ['firebasestorage.googleapis.com', 'images.unsplash.com', 'lh3.googleusercontent.com'],
   },
   webpack: (config) => {
-    // Add alias for monorepo packages
+    // Add alias for monorepo packages (points directly to src, bypassing build)
     config.resolve.alias = {
       ...config.resolve.alias,
       '@ecohabit/ui': path.resolve(__dirname, '../../packages/ui/src'),
@@ -17,16 +14,6 @@ const nextConfig = {
       '@ecohabit/firebase': path.resolve(__dirname, '../../packages/firebase/src'),
     };
 
-    config.module.rules.push({
-      test: /\.(glb|gltf)$/,
-      use: {
-        loader: 'file-loader',
-        options: {
-          publicPath: '/_next/static/',
-          outputPath: 'static/',
-        },
-      },
-    });
     return config;
   },
   async headers() {

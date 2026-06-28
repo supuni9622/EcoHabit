@@ -1,8 +1,7 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
-import { getMessaging } from 'firebase/messaging';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -14,13 +13,32 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Firestore collection constants
+export const COLLECTIONS = {
+  USERS: 'users',
+  HABIT_LOGS: 'habitLogs',
+  CHALLENGES: 'challenges',
+  LESSONS: 'lessons',
+  LEADERBOARD: 'leaderboard',
+  CHAT_MESSAGES: 'chatMessages',
+  ANALYTICS: 'analytics',
+} as const;
+
+// Initialize Firebase (avoid duplicate initialization)
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
 // Initialize Firebase services
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
-export const messaging = getMessaging(app);
+
+// Messaging is only available in browser (not SSR)
+export const getMessagingService = async () => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  const { getMessaging } = await import('firebase/messaging');
+  return getMessaging(app);
+};
 
 export default app;

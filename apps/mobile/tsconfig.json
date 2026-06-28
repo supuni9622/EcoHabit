@@ -1,0 +1,13 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": false,
+    "baseUrl": ".",
+    "paths": {
+      "@ecohabit/shared": ["../../packages/shared/src"],
+      "@ecohabit/ui": ["../../packages/ui/src"],
+      "@ecohabit/firebase": ["../../packages/firebase/src"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
+}
