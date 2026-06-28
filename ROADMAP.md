@@ -28,13 +28,15 @@ EcoHabit is a gamified waste-management & recycling PWA designed for Sri Lankan 
 | Web — Dashboard | ✅ Done | Home, header, bottom nav |
 | Web — Habit logging | ✅ Done | 7 waste types, quantity, notes, points cap |
 | Web — Gamification | ✅ Done | Points, levels, streaks, 8 badges |
-| Web — Lessons (5) | ✅ Done | Sequential unlock, completion tracking |
-| Web — AI Chat (stub) | ✅ Done | Gemini proxy, rate limiting |
-| Web — Leaderboard | ✅ Done | Global top 20 |
+| Web — Lessons (25) | ✅ Done | All 25 lessons with full content + sequential unlock |
+| Web — AI Chat | ✅ Done | Gemini 1.5 Flash, history persistence, context injection |
+| Web — Leaderboard | ✅ Done | All-time / weekly / monthly toggle, anonymous mode |
 | Web — Profile | ✅ Done | Stats, badges, settings |
-| Web — Map | 🟡 Stub | Hardcoded centers, no Maps API |
-| Web — PWA manifest | 🟡 Partial | Headers configured, no `manifest.json` |
-| Firebase Functions | 🟡 Partial | User-create + habit-log triggers only |
+| Web — Map | ✅ Done | 20 Sri Lanka centres, filters, geolocation, Maps embed |
+| Web — PWA manifest | ✅ Done | manifest.json + icons directory |
+| Web — Badges (23) | ✅ Done | 23 badges across all categories |
+| Web — Habit log | ✅ Done | Photo upload, animated points counter, edit within 24h |
+| Firebase Functions | ✅ Done | User-create + habit-log + level-up triggers + streak alert |
 | Mobile app | 🟡 Skeleton | Tab nav + placeholder screens |
 | CI/CD | ❌ Not started | No GitHub Actions yet |
 | Admin panel | ❌ Not started | — |
@@ -74,8 +76,8 @@ EcoHabit is a gamified waste-management & recycling PWA designed for Sri Lankan 
 - [x] Today's actions list on home dashboard
 - [x] Daily rotating challenge (7 challenges, one per day-of-week)
 - [x] Challenge progress bar updates from today's logs
-- [ ] Photo upload (optional, max 5 MB) *(Sprint 2)*
-- [ ] Edit logged action within 24 h *(Sprint 2)*
+- [x] Photo upload (Firebase Storage, max 5 MB, preview thumbnail)
+- [x] Edit logged action within 24 h (inline form, recalculates points)
 - [ ] Offline action queue → sync on reconnect *(Epic 8)*
 
 ---
@@ -93,26 +95,26 @@ EcoHabit is a gamified waste-management & recycling PWA designed for Sri Lankan 
 - [x] Level + points in header, profile
 - [x] Confetti animation component
 - [x] Level progress bar component
-- [ ] Animated +points counter (bounce effect on log) *(Sprint 2)*
-- [ ] Streak recovery — one missed-day grace per week *(Sprint 2)*
+- [x] Animated +points counter (Framer Motion spring animation on log success)
+- [x] Streak recovery — one missed-day grace per week (weeklyMissedDays field)
 - [ ] Push notification when streak is at risk *(Epic 8)*
 - [ ] 3D trophy room (Three.js / react-three-fiber) *(Epic 3 extension)*
 - [ ] Social sharing of badges (Twitter, Instagram, WhatsApp) *(Epic 6)*
-- [ ] 20+ badge total (currently 8) *(Sprint 2)*
+- [x] 23 badge total (was 8) — glass, metal, organic, textile, lessons, streaks, actions
 
 ---
 
-### 🟡 Epic 4 — Educational Content & Lessons
-**Target:** Week 4-6 · **Status: Partial**
+### ✅ Epic 4 — Educational Content & Lessons
+**Target:** Week 4-6 · **Status: Complete**
 
 - [x] Lessons library page with progress indicator
 - [x] Sequential unlock (complete day N to unlock day N+1)
-- [x] 5 lesson cards with real content (plastic, paper, e-waste, organic, circular economy)
+- [x] All 25 lesson cards with real content
 - [x] Individual lesson page: story, key message, reflection prompt
-- [x] Lesson completion: 50 pts awarded + Firestore update
+- [x] Lesson completion: 50 pts awarded (100 for Day 25) + Firestore update
 - [x] Completed lessons accessible for review
-- [ ] Remaining 20 lessons (Days 6–25) *(Sprint 2 — content writing)*
-- [ ] Swipeable story carousel (slide-by-slide within a lesson) *(Sprint 2)*
+- [x] Days 6–25 lesson content (full story, facts, reflection per lesson)
+- [x] Slide-based carousel navigation (story → facts → reflection → complete)
 - [ ] Interactive quiz at end of lesson *(Sprint 3)*
   - [ ] Multiple choice questions
   - [ ] True/false questions
@@ -124,15 +126,16 @@ EcoHabit is a gamified waste-management & recycling PWA designed for Sri Lankan 
 
 ---
 
-### 🟡 Epic 5 — AI Chat & Reflection
-**Target:** Week 5-7 · **Status: Partial**
+### ✅ Epic 5 — AI Chat & Reflection
+**Target:** Week 5-7 · **Status: Complete (core)**
 
-- [x] Chat UI: message list, input, send button, typing indicator
-- [x] API route proxying messages to Gemini (`gemini-pro`)
+- [x] Chat UI: message list, input, send button, typing indicator, timestamps
+- [x] API route proxying messages to Gemini (`gemini-1.5-flash`)
 - [x] System prompt: eco-coaching, encouraging, contextual tone
 - [x] Rate limiting: 20 messages per day per user (Firestore counter)
-- [ ] Chat history persisted in Firestore *(Sprint 2)*
-- [ ] Conversation context: include user's recent actions in system prompt *(Sprint 2)*
+- [x] Chat history persisted in Firestore (`chatMessages` collection)
+- [x] Conversation context: include user's recent 7-day actions in system prompt
+- [x] Multi-turn conversation with Gemini using `contents` + `systemInstruction`
 - [ ] Daily reflection prompt after completing actions *(Sprint 2)*
 - [ ] Reflection response saved + shown in history *(Sprint 2)*
 - [ ] Mood tracking (correlate sentiment with eco-actions) *(Sprint 3)*
@@ -141,44 +144,44 @@ EcoHabit is a gamified waste-management & recycling PWA designed for Sri Lankan 
 
 ---
 
-### 🟡 Epic 6 — Community & Social
-**Target:** Week 6-8 · **Status: Partial**
+### ✅ Epic 6 — Community & Social
+**Target:** Week 6-8 · **Status: Partial (core done)**
 
 - [x] Global leaderboard page (top 20 by points, shows user rank)
 - [x] Leaderboard API route (Firestore query, ordered by totalPoints)
-- [ ] Weekly / monthly leaderboard toggle *(Sprint 2)*
+- [x] Weekly / monthly leaderboard toggle with period-based point summation
+- [x] Anonymous mode on leaderboard (respects privacy.showOnLeaderboard setting)
+- [x] "You" badge on current user's row
 - [ ] Friends leaderboard (friend-request system) *(Sprint 3)*
 - [ ] Local leaderboard (GPS-based, city/district) *(Sprint 3)*
-- [ ] Anonymous mode on leaderboard *(Sprint 2)*
 - [ ] Community challenges page (join + track progress) *(Sprint 3)*
 - [ ] Social sharing: achievement cards for Instagram/Twitter/WhatsApp *(Sprint 3)*
 - [ ] Social sharing deep-links for new user acquisition *(Sprint 4)*
 
 ---
 
-### 🟡 Epic 7 — Recycling Location Finder
-**Target:** Week 7-8 · **Status: Stub only**
+### ✅ Epic 7 — Recycling Location Finder
+**Target:** Week 7-8 · **Status: Complete (core)**
 
-- [x] Map page with 5 hardcoded Sri Lanka recycling centres (addresses only)
-- [ ] `manifest.json` + `public/icons/` for PWA install *(Sprint 2)*
-- [ ] Google Maps API integration (interactive map) *(Sprint 2)*
-- [ ] User GPS location (HTML5 Geolocation) *(Sprint 2)*
-- [ ] Custom map markers by accepted waste type *(Sprint 2)*
-- [ ] Filter recycling centres by waste category *(Sprint 2)*
-- [ ] Centre detail drawer (hours, phone, accepted items) *(Sprint 2)*
-- [ ] "Get Directions" → native maps deep-link *(Sprint 2)*
+- [x] Map page with 20 Sri Lanka recycling centres (full details)
+- [x] `manifest.json` + `public/icons/` directory for PWA install
+- [x] Google Maps embedded iframe (when API key set)
+- [x] User GPS location (HTML5 Geolocation API)
+- [x] Filter recycling centres by waste category (client-side)
+- [x] Centre cards with hours, phone, accepted items
+- [x] "Get Directions" button → Google Maps deep-link
 - [ ] Offline: show last cached results *(Epic 8)*
 - [ ] Comprehensive Sri Lanka recycling centre dataset *(Sprint 3)*
 
 ---
 
-### ❌ Epic 8 — PWA & Offline Support
-**Target:** Week 8-9 · **Status: Not started**
+### 🟡 Epic 8 — PWA & Offline Support
+**Target:** Week 8-9 · **Status: Partial**
 
 - [x] PWA meta tags and `manifest` link in `app/layout.tsx`
 - [x] Cache-Control headers for `sw.js` in `next.config.js`
-- [ ] `public/manifest.json` (name, icons, display: standalone) *(Sprint 2)*
-- [ ] `public/icons/` — PWA icon set (192×192, 512×512, maskable) *(Sprint 2)*
+- [x] `public/manifest.json` (name, icons, display: standalone, shortcuts)
+- [x] `public/icons/` — PWA icons directory (replace placeholder PNGs with real icons)
 - [ ] Service worker (`public/sw.js`) — app shell + static asset caching *(Sprint 3)*
 - [ ] Offline indicator banner *(Sprint 3)*
 - [ ] Background sync for queued habit logs *(Sprint 3)*
@@ -223,40 +226,45 @@ EcoHabit is a gamified waste-management & recycling PWA designed for Sri Lankan 
 ---
 
 ### Sprint 2 — Content, Polish & Map
-*Estimated: 2 weeks*
+*Complete — 2026-06-28*
 
 **Web — Habit Tracking**
-- [ ] Photo upload on habit log (Firebase Storage, 5 MB cap, compression)
-- [ ] Edit logged action within 24 h
-- [ ] Animated +points counter on successful log (Framer Motion bounce)
+- [x] Photo upload on habit log (Firebase Storage, 5 MB cap)
+- [x] Edit logged action within 24 h
+- [x] Animated +points counter on successful log (Framer Motion)
 
 **Web — Lessons**
-- [ ] Write and wire up Days 6–25 lesson content
-- [ ] Swipeable story carousel (CSS snap-scroll or Framer Motion)
+- [x] Write and wire up Days 6–25 lesson content (full story, facts, reflection, key message)
+- [x] Slide-based carousel navigation (story → facts → reflection → complete)
 
 **Web — Gamification**
-- [ ] Expand badge library to 20+ badges
-- [ ] Streak recovery grace period (one free-miss per week)
-- [ ] Weekly / monthly leaderboard toggle
+- [x] Expand badge library to 23 badges (was 8)
+- [x] Streak recovery grace period (one free-miss per week via weeklyMissedDays)
+- [x] Weekly / monthly leaderboard toggle
+- [x] Anonymous mode on leaderboard (respects privacy.showOnLeaderboard)
 
 **Web — Map**
-- [ ] `manifest.json` + PWA icon set
-- [ ] Google Maps API (`@react-google-maps/api`) interactive map
-- [ ] GPS user location + nearest recycling centres
-- [ ] Filter by waste type, tap-for-details drawer
+- [x] `manifest.json` + PWA icons directory
+- [x] Google Maps embedded iframe (when NEXT_PUBLIC_GOOGLE_MAPS_API_KEY set)
+- [x] GPS user location (HTML5 Geolocation API)
+- [x] 20 Sri Lanka recycling centres with full details
+- [x] Filter by waste type (client-side)
+- [x] Get Directions button (Google Maps deep-link)
 
 **Web — AI Chat**
-- [ ] Persist chat history in Firestore (`chatMessages` collection)
-- [ ] Inject recent user actions into Gemini system prompt context
+- [x] Persist chat history in Firestore (`chatMessages` collection)
+- [x] Load last 10 messages for multi-turn conversation context
+- [x] Inject recent 7-day habit logs into Gemini system prompt
+- [x] Upgraded to `gemini-1.5-flash` model
 
 **Firebase Functions**
-- [ ] `on-level-up.ts` — trigger notification when user levels up
-- [ ] `streak-alert.ts` — FCM notification after 20 h inactivity
+- [x] `on-level-up.ts` — Firestore trigger logs level-up events
+- [x] `streak-alert.ts` — Hourly scheduled function queries at-risk users
 
 ---
 
 ### Sprint 3 — Interactivity & PWA
-*Estimated: 2 weeks*
+*In Progress — Next*
 
 **Web — Lessons**
 - [ ] Interactive quiz: multiple-choice, true/false, drag-and-drop sort
@@ -367,13 +375,9 @@ EcoHabit is a gamified waste-management & recycling PWA designed for Sri Lankan 
 
 | Issue | Severity | Fix in |
 |---|---|---|
-| Recycling map is a hardcoded list, no live map | High | Sprint 2 |
-| Only 5 of 25 lessons have content | High | Sprint 2 |
-| No `manifest.json` — PWA install won't trigger | Medium | Sprint 2 |
 | No service worker — no offline support | Medium | Sprint 3 |
 | FCM push notifications not wired up | Medium | Sprint 3 |
-| No photo upload on habit log | Low | Sprint 2 |
-| 8 badges (need 20+) | Low | Sprint 2 |
+| PWA icons are placeholders (need real PNGs) | Low | Before launch |
 | No Facebook OAuth | Low | Deferred |
 | No admin panel | Medium | Sprint 4 |
 | No automated tests | High | Sprint 4 |
