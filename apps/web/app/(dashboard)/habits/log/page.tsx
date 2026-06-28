@@ -1,7 +1,10 @@
 'use client';
 
-import { useState, Suspense, useEffect } from 'react';
+import { useState, useRef, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { motion, animate } from 'framer-motion';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../../../../lib/firebase/config';
 import { useAuthStore } from '../../../../lib/store/auth.store';
 import { useHabitsStore } from '../../../../lib/store/habits.store';
 import { getTodayPoints } from '../../../../lib/services/habits';
@@ -14,6 +17,7 @@ const WASTE_TYPES = [
   { id: 'organic', icon: '🍎', label: 'Organic', pts: 5 },
   { id: 'glass', icon: '🍶', label: 'Glass', pts: 12 },
   { id: 'metal', icon: '🥫', label: 'Metal', pts: 14 },
+  { id: 'textile', icon: '👗', label: 'Textile', pts: 6 },
   { id: 'general', icon: '🗑️', label: 'General', pts: 5 },
 ];
 
@@ -22,6 +26,30 @@ const logSchema = z.object({
   quantity: z.number().int().min(1).max(100),
   notes: z.string().max(200).optional(),
 });
+
+const MAX_PHOTO_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+
+/** Animated counter that counts up from 0 to the target value */
+function AnimatedCounter({ target }: { target: number }) {
+  const nodeRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const node = nodeRef.current;
+    if (!node) return;
+
+    const controls = animate(0, target, {
+      duration: 1.2,
+      ease: 'easeOut',
+      onUpdate(value) {
+        node.textContent = `+${Math.round(value)}`;
+      },
+    });
+
+    return () => controls.stop();
+  }, [target]);
+
+  return <div ref={nodeRef} className="text-5xl font-bold text-green-600">+0</div>;
+}
 
 function LogForm() {
   const router = useRouter();
@@ -33,9 +61,14 @@ function LogForm() {
   const [wasteType, setWasteType] = useState(defaultType);
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState('');
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoError, setPhotoError] = useState('');
+  const [uploadProgress, setUploadProgress] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState<{ points: number; badges: string[] } | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   // Initialize todayPoints from Firestore on mount if store is empty
   useEffect(() => {
@@ -47,9 +80,35 @@ function LogForm() {
   }, [user, todayPoints, setTodayPoints]);
 
   const selectedType = WASTE_TYPES.find((wt) => wt.id === wasteType) ?? WASTE_TYPES[0];
-  const estimatedPoints = selectedType.pts * quantity;
+  const estimatedPoints = (selectedType?.pts ?? 5) * quantity;
   const remainingCap = 500 - todayPoints;
   const pointsAfterCap = Math.min(estimatedPoints, remainingCap);
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPhotoError('');
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setPhotoError('Please select an image file.');
+      return;
+    }
+    if (file.size > MAX_PHOTO_SIZE_BYTES) {
+      setPhotoError('Image must be smaller than 5 MB.');
+      return;
+    }
+
+    setPhotoFile(file);
+    const url = URL.createObjectURL(file);
+    setPhotoPreview(url);
+  };
+
+  const removePhoto = () => {
+    setPhotoFile(null);
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhotoPreview(null);
+    if (photoInputRef.current) photoInputRef.current.value = '';
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,10 +122,21 @@ function LogForm() {
 
     setLoading(true);
     try {
+      let photoUrl: string | undefined;
+
+      // Upload photo if present
+      if (photoFile && user?.id) {
+        setUploadProgress(true);
+        const storageRef = ref(storage, `habitPhotos/${user.id}/${Date.now()}.jpg`);
+        await uploadBytes(storageRef, photoFile);
+        photoUrl = await getDownloadURL(storageRef);
+        setUploadProgress(false);
+      }
+
       const res = await fetch('/api/habits/log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ wasteType, quantity, notes, userId: user?.id }),
+        body: JSON.stringify({ wasteType, quantity, notes, userId: user?.id, photoUrl }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Failed to log');
@@ -83,7 +153,6 @@ function LogForm() {
         co2Saved: data.co2Saved ?? 0,
         waterSaved: data.waterSaved ?? 0,
       });
-      // Note: addLog already updates todayPoints in the store
 
       setSuccess({
         points: data.pointsEarned,
@@ -93,28 +162,50 @@ function LogForm() {
       setError(err instanceof Error ? err.message : 'Failed to log action');
     } finally {
       setLoading(false);
+      setUploadProgress(false);
     }
   };
 
   if (success) {
     return (
       <div className="max-w-lg mx-auto px-4 py-6">
-        <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
-          <div className="text-6xl mb-4 animate-bounce">🎉</div>
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+          className="bg-white rounded-2xl shadow-sm p-8 text-center"
+        >
+          {/* Animated checkmark */}
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 20, delay: 0.1 }}
+            className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4"
+          >
+            <span className="text-4xl">✅</span>
+          </motion.div>
+
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Action Logged!</h2>
-          <div className="text-4xl font-bold text-green-600 mb-1">+{success.points}</div>
           <p className="text-gray-500 mb-4">points earned</p>
 
+          {/* Animated points counter */}
+          <AnimatedCounter target={success.points} />
+
           {success.badges.length > 0 && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8 }}
+              className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mt-6 mb-2"
+            >
               <p className="font-semibold text-yellow-700 mb-2">🏆 New Badge Unlocked!</p>
               {success.badges.map((b) => (
                 <p key={b} className="text-yellow-600 text-sm">{b}</p>
               ))}
-            </div>
+            </motion.div>
           )}
 
-          <div className="flex gap-3">
+          <div className="flex gap-3 mt-6">
             <button
               onClick={() => setSuccess(null)}
               className="flex-1 border border-green-600 text-green-600 py-3 rounded-xl font-medium"
@@ -128,7 +219,7 @@ function LogForm() {
               Go Home
             </button>
           </div>
-        </div>
+        </motion.div>
       </div>
     );
   }
@@ -223,6 +314,52 @@ function LogForm() {
             className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-500"
           />
           <p className="text-xs text-gray-400 mt-1">{notes.length}/200</p>
+        </div>
+
+        {/* Photo upload */}
+        <div className="bg-white rounded-2xl p-5 shadow-sm">
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            Add Photo (optional)
+          </label>
+          {photoPreview ? (
+            <div className="relative">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={photoPreview}
+                alt="Selected photo preview"
+                className="w-full h-40 object-cover rounded-xl border border-gray-200"
+              />
+              <button
+                type="button"
+                onClick={removePhoto}
+                className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center text-sm font-bold hover:bg-red-600"
+              >
+                ×
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => photoInputRef.current?.click()}
+              className="w-full h-24 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-green-400 hover:bg-green-50 transition-colors text-gray-400 hover:text-green-600"
+            >
+              <span className="text-2xl">📷</span>
+              <span className="text-xs font-medium">Tap to add a photo (max 5 MB)</span>
+            </button>
+          )}
+          <input
+            ref={photoInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handlePhotoChange}
+            className="hidden"
+          />
+          {photoError && (
+            <p className="text-xs text-red-500 mt-2">{photoError}</p>
+          )}
+          {uploadProgress && (
+            <p className="text-xs text-green-600 mt-2 animate-pulse">Uploading photo...</p>
+          )}
         </div>
 
         {/* Points preview */}

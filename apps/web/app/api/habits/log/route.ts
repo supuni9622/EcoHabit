@@ -29,14 +29,16 @@ const POINT_VALUES: Record<string, number> = {
   organic: 5,
   glass: 12,
   metal: 14,
+  textile: 6,
   general: 5,
   other: 5,
 };
 
 const logSchema = z.object({
-  wasteType: z.enum(['plastic', 'paper', 'e-waste', 'organic', 'glass', 'metal', 'general', 'other']),
+  wasteType: z.enum(['plastic', 'paper', 'e-waste', 'organic', 'glass', 'metal', 'textile', 'general', 'other']),
   quantity: z.number().int().min(1).max(100),
   notes: z.string().max(200).optional(),
+  photoUrl: z.string().url().optional(),
 });
 
 async function getTodayPoints(userId: string): Promise<number> {
@@ -57,6 +59,16 @@ async function getUserTotalActions(userId: string): Promise<number> {
   return snap.size;
 }
 
+/** Return the Monday 00:00:00 for the given date in local time */
+function getWeekStart(date: Date): Date {
+  const d = new Date(date);
+  const day = d.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+  const diff = day === 0 ? -6 : 1 - day; // shift to Monday
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
 async function updateStreak(userId: string): Promise<number> {
   const userRef = doc(db, 'users', userId);
   const userSnap = await getDoc(userRef);
@@ -65,37 +77,61 @@ async function updateStreak(userId: string): Promise<number> {
   const userData = userSnap.data();
   const lastActionAt: Date | null = userData.lastActionAt?.toDate?.() ?? null;
   const currentStreak: number = userData.currentStreak ?? 0;
+  const weeklyMissedDays: number = userData.weeklyMissedDays ?? 0;
+  const weekStartAt: Date | null = userData.weekStartAt?.toDate?.() ?? null;
   const now = new Date();
 
   let newStreak = currentStreak;
+  let newWeeklyMissedDays = weeklyMissedDays;
+
+  // Reset weekly missed days counter at the start of a new week
+  const currentWeekStart = getWeekStart(now);
+  const lastWeekStart = weekStartAt ? getWeekStart(weekStartAt) : null;
+  const isNewWeek = !lastWeekStart || lastWeekStart.getTime() < currentWeekStart.getTime();
+  if (isNewWeek) {
+    newWeeklyMissedDays = 0;
+  }
 
   if (!lastActionAt) {
     newStreak = 1;
   } else {
     const hoursSinceLast =
       (now.getTime() - lastActionAt.getTime()) / (1000 * 60 * 60);
+
     if (hoursSinceLast > 48) {
-      // Streak reset
+      // Gap too large — streak always resets regardless of grace
       newStreak = 1;
+      newWeeklyMissedDays = isNewWeek ? 0 : weeklyMissedDays;
     } else if (hoursSinceLast < 24) {
-      // Same day or within 24h — keep streak, might already be updated
+      // Same calendar day or within 24h — check if it's actually a new calendar day
       const lastDate = new Date(lastActionAt);
       lastDate.setHours(0, 0, 0, 0);
       const todayDate = new Date(now);
       todayDate.setHours(0, 0, 0, 0);
       if (lastDate.getTime() < todayDate.getTime()) {
-        // New day
+        // New calendar day within 24h
         newStreak = currentStreak + 1;
       }
+      // else same calendar day: no streak increment needed
     } else {
-      // 24-48h — streak increment
-      newStreak = currentStreak + 1;
+      // 24-48h gap: exactly one missed day — apply weekly grace if available
+      const daysMissed = Math.floor(hoursSinceLast / 24) - 1;
+      if (daysMissed >= 1 && newWeeklyMissedDays < 1) {
+        // Use grace: keep streak, charge the missed day counter
+        newWeeklyMissedDays = isNewWeek ? 1 : weeklyMissedDays + 1;
+        newStreak = currentStreak + 1;
+      } else {
+        // Grace exhausted or more than one day missed — increment normally
+        newStreak = currentStreak + 1;
+      }
     }
   }
 
   await updateDoc(userRef, {
     currentStreak: newStreak,
     lastActionAt: serverTimestamp(),
+    weeklyMissedDays: newWeeklyMissedDays,
+    weekStartAt: Timestamp.fromDate(currentWeekStart),
   });
 
   return newStreak;
@@ -103,9 +139,6 @@ async function updateStreak(userId: string): Promise<number> {
 
 export async function POST(request: NextRequest) {
   try {
-    // Extract user ID from session (Firebase client-side handles auth,
-    // server-side we rely on a userId passed in the request or a decoded token)
-    // For this implementation we'll get userId from a custom header or body
     const body = await request.json();
     const parsed = logSchema.safeParse(body);
 
@@ -116,15 +149,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Try to get userId from Authorization header (Firebase ID token)
-    // In a full implementation, verify the token with firebase-admin
-    // For now, accept userId from the request body (frontend sends it)
     const userId: string = body.userId ?? '';
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { wasteType, quantity, notes } = parsed.data;
+    const { wasteType, quantity, notes, photoUrl } = parsed.data;
 
     // Calculate points with daily cap
     const basePoints = (POINT_VALUES[wasteType] ?? 5) * quantity;
@@ -136,7 +166,7 @@ export async function POST(request: NextRequest) {
     const { co2Saved, waterSaved } = calculateEnvironmentalImpact(wasteType, quantity);
 
     // Save habit log
-    const docRef = await addDoc(collection(db, 'habitLogs'), {
+    const logData: Record<string, unknown> = {
       userId,
       wasteType,
       quantity,
@@ -145,7 +175,12 @@ export async function POST(request: NextRequest) {
       co2Saved,
       waterSaved,
       loggedAt: serverTimestamp(),
-    });
+    };
+    if (photoUrl) {
+      logData.photoUrl = photoUrl;
+    }
+
+    const docRef = await addDoc(collection(db, 'habitLogs'), logData);
 
     // Update user points and level
     const userRef = doc(db, 'users', userId);

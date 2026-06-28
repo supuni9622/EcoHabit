@@ -92,7 +92,7 @@ export const AVAILABLE_BADGES: Badge[] = [
     id: 'eco_warrior',
     name: 'Eco Warrior',
     description: 'Earn 1000 points',
-    icon: '⚔️',
+    icon: '🌟',
     rarity: 'epic',
     requirements: {
       points: 1000,
@@ -177,6 +177,169 @@ export const AVAILABLE_BADGES: Badge[] = [
       points: 1000,
       features: ['wise_avatar', 'all_animations', 'special_title'],
       title: 'Eco Scholar',
+    },
+  },
+  // New badges — Sprint 2
+  {
+    id: 'glass_hero',
+    name: 'Glass Hero',
+    description: 'Recycle 15 glass items',
+    icon: '🍶',
+    rarity: 'uncommon',
+    requirements: {
+      actions: 15,
+      wasteTypes: ['glass'],
+    },
+    rewards: {
+      points: 120,
+      features: ['glass_avatar_accessory'],
+    },
+  },
+  {
+    id: 'metal_master',
+    name: 'Metal Master',
+    description: 'Recycle 10 metal items',
+    icon: '🥫',
+    rarity: 'uncommon',
+    requirements: {
+      actions: 10,
+      wasteTypes: ['metal'],
+    },
+    rewards: {
+      points: 120,
+      features: ['metal_avatar_accessory'],
+    },
+  },
+  {
+    id: 'organic_champion',
+    name: 'Organic Champion',
+    description: 'Compost 20 organic items',
+    icon: '🌿',
+    rarity: 'uncommon',
+    requirements: {
+      actions: 20,
+      wasteTypes: ['organic'],
+    },
+    rewards: {
+      points: 100,
+      features: ['organic_avatar_accessory'],
+    },
+  },
+  {
+    id: 'textile_saver',
+    name: 'Textile Saver',
+    description: 'Recycle 5 textile items',
+    icon: '👗',
+    rarity: 'rare',
+    requirements: {
+      actions: 5,
+      wasteTypes: ['textile'],
+    },
+    rewards: {
+      points: 150,
+      features: ['textile_avatar_accessory'],
+    },
+  },
+  {
+    id: 'eco_explorer',
+    name: 'Eco Explorer',
+    description: 'Complete 3 lessons',
+    icon: '🔭',
+    rarity: 'common',
+    requirements: {
+      actions: 3,
+      wasteTypes: ['lesson'],
+    },
+    rewards: {
+      points: 75,
+      features: ['explorer_avatar_accessory'],
+    },
+  },
+  {
+    id: 'quick_learner',
+    name: 'Quick Learner',
+    description: 'Complete all 25 lessons',
+    icon: '🎓',
+    rarity: 'legendary',
+    requirements: {
+      actions: 25,
+      wasteTypes: ['lesson'],
+    },
+    rewards: {
+      points: 1500,
+      features: ['scholar_full_avatar', 'all_animations', 'special_title'],
+      title: 'Eco Scholar',
+    },
+  },
+  {
+    id: 'week_warrior',
+    name: 'Week Warrior',
+    description: 'Maintain a 14-day streak',
+    icon: '🗓️',
+    rarity: 'rare',
+    requirements: {
+      streak: 14,
+    },
+    rewards: {
+      points: 250,
+      features: ['week_warrior_accessory'],
+    },
+  },
+  {
+    id: 'action_hero',
+    name: 'Action Hero',
+    description: 'Log 50 total actions',
+    icon: '💪',
+    rarity: 'epic',
+    requirements: {
+      actions: 50,
+    },
+    rewards: {
+      points: 400,
+      features: ['hero_avatar', 'special_animations'],
+    },
+  },
+  {
+    id: 'impact_maker',
+    name: 'Impact Maker',
+    description: 'Log 100 total actions',
+    icon: '🌎',
+    rarity: 'legendary',
+    requirements: {
+      actions: 100,
+    },
+    rewards: {
+      points: 800,
+      features: ['impact_avatar', 'all_animations', 'special_title'],
+      title: 'Impact Maker',
+    },
+  },
+  {
+    id: 'dawn_recycler',
+    name: 'Dawn Recycler',
+    description: 'Log an eco action before 8 AM',
+    icon: '🌅',
+    rarity: 'common',
+    requirements: {
+      actions: 1,
+    },
+    rewards: {
+      points: 50,
+      features: ['dawn_avatar_accessory'],
+    },
+  },
+  {
+    id: 'weekend_warrior',
+    name: 'Weekend Warrior',
+    description: 'Log eco actions on both Saturday and Sunday',
+    icon: '🏖️',
+    rarity: 'uncommon',
+    requirements: {
+      actions: 2,
+    },
+    rewards: {
+      points: 100,
+      features: ['weekend_avatar_accessory'],
     },
   },
 ];

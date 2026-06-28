@@ -1,8 +1,24 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { sendChatMessage } from '../../../lib/services/ai-chat';
-import type { ChatMessage } from '../../../lib/services/ai-chat';
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  limit,
+  getDocs,
+  Timestamp,
+} from 'firebase/firestore';
+import { db } from '../../../lib/firebase/config';
+import { useAuthStore } from '../../../lib/store/auth.store';
+
+interface ChatMessage {
+  id: string;
+  content: string;
+  type: 'user' | 'assistant';
+  timestamp: Date;
+}
 
 const SUGGESTED_PROMPTS = [
   'How can I reduce plastic waste at home?',
@@ -11,20 +27,66 @@ const SUGGESTED_PROMPTS = [
   'Tell me about e-waste recycling in Sri Lanka',
 ];
 
+const WELCOME_MESSAGE: ChatMessage = {
+  id: 'welcome',
+  content:
+    "Hi! I'm your EcoCoach powered by AI. I can help you with recycling tips, eco-friendly practices, and environmental questions. What would you like to know today?",
+  type: 'assistant',
+  timestamp: new Date(),
+};
+
 export default function ChatPage() {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: '0',
-      content:
-        "Hi! I'm your EcoCoach powered by AI. I can help you with recycling tips, eco-friendly practices, and environmental questions. What would you like to know today?",
-      type: 'assistant',
-      timestamp: new Date(),
-    },
-  ]);
+  const { user } = useAuthStore();
+  const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MESSAGE]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Load chat history from Firestore on mount
+  useEffect(() => {
+    if (!user?.id || historyLoaded) return;
+
+    const loadHistory = async () => {
+      try {
+        const q = query(
+          collection(db, 'chatMessages'),
+          where('userId', '==', user.id),
+          orderBy('timestamp', 'asc'),
+          limit(50)
+        );
+        const snap = await getDocs(q);
+        if (snap.empty) {
+          setHistoryLoaded(true);
+          return;
+        }
+
+        const history: ChatMessage[] = snap.docs.map((d, i) => {
+          const data = d.data();
+          const ts = data.timestamp instanceof Timestamp
+            ? data.timestamp.toDate()
+            : new Date();
+          return {
+            id: d.id ?? `hist-${i}`,
+            content: data.content as string,
+            type: data.role === 'model' ? 'assistant' : 'user',
+            timestamp: ts,
+          };
+        });
+
+        if (history.length > 0) {
+          setMessages([WELCOME_MESSAGE, ...history]);
+        }
+      } catch (err) {
+        console.error('Failed to load chat history:', err);
+      } finally {
+        setHistoryLoaded(true);
+      }
+    };
+
+    loadHistory();
+  }, [user?.id, historyLoaded]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -44,19 +106,38 @@ export default function ChatPage() {
     setInput('');
     setIsTyping(true);
 
-    const result = await sendChatMessage(content, messages);
+    try {
+      const res = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: content, userId: user?.id }),
+      });
 
-    setIsTyping(false);
+      const data = await res.json();
+      const responseText = res.ok
+        ? (data.message ?? 'Sorry, I had trouble getting a response.')
+        : 'Sorry, I had trouble getting a response. Please try again.';
 
-    const assistantMsg: ChatMessage = {
-      id: crypto.randomUUID(),
-      content: result.success
-        ? result.message
-        : 'Sorry, I had trouble getting a response. Please try again.',
-      type: 'assistant',
-      timestamp: new Date(),
-    };
-    setMessages((prev) => [...prev, assistantMsg]);
+      const assistantMsg: ChatMessage = {
+        id: crypto.randomUUID(),
+        content: responseText,
+        type: 'assistant',
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, assistantMsg]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          content: 'Sorry, I had trouble connecting. Please try again.',
+          type: 'assistant',
+          timestamp: new Date(),
+        },
+      ]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -83,8 +164,8 @@ export default function ChatPage() {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-gray-50">
-        {/* Suggested prompts (only shown if just 1 message) */}
-        {messages.length === 1 && (
+        {/* Suggested prompts (only shown if just 1 message and history loaded) */}
+        {messages.length === 1 && historyLoaded && (
           <div className="space-y-2">
             <p className="text-xs text-gray-400 text-center">Suggested questions</p>
             {SUGGESTED_PROMPTS.map((prompt) => (
@@ -96,6 +177,13 @@ export default function ChatPage() {
                 {prompt}
               </button>
             ))}
+          </div>
+        )}
+
+        {!historyLoaded && (
+          <div className="text-center py-6">
+            <div className="text-2xl animate-spin mb-2">⟳</div>
+            <p className="text-xs text-gray-400">Loading conversation history...</p>
           </div>
         )}
 

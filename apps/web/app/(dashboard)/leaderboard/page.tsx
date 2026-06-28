@@ -1,8 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
-import { db } from '../../../lib/firebase/config';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuthStore } from '../../../lib/store/auth.store';
 
 interface LeaderboardEntry {
@@ -10,61 +8,75 @@ interface LeaderboardEntry {
   userId: string;
   displayName: string;
   avatar: string;
-  totalPoints: number;
+  points: number;
   level: number;
-  currentStreak: number;
-  badgeCount: number;
+  streak: number;
+  badges: number;
+  isAnonymous: boolean;
 }
 
+type Period = 'all-time' | 'weekly' | 'monthly';
+
 const MEDAL = ['🥇', '🥈', '🥉'];
+
+const PERIOD_LABELS: Record<Period, string> = {
+  'all-time': 'All Time',
+  weekly: 'This Week',
+  monthly: 'This Month',
+};
 
 export default function LeaderboardPage() {
   const { user } = useAuthStore();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [userRank, setUserRank] = useState<number | null>(null);
+  const [period, setPeriod] = useState<Period>('all-time');
+
+  const fetchLeaderboard = useCallback(async (selectedPeriod: Period) => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ period: selectedPeriod });
+      if (user?.id) params.set('userId', user.id);
+
+      const res = await fetch(`/api/gamification/leaderboard?${params.toString()}`);
+      if (!res.ok) throw new Error('Failed to fetch leaderboard');
+
+      const data = await res.json();
+      setEntries(data.entries ?? []);
+      setUserRank(data.userRank ?? null);
+    } catch {
+      setEntries([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id]);
 
   useEffect(() => {
-    const fetchLeaderboard = async () => {
-      try {
-        const q = query(
-          collection(db, 'users'),
-          orderBy('totalPoints', 'desc'),
-          limit(20)
-        );
-        const snap = await getDocs(q);
-        const list: LeaderboardEntry[] = snap.docs.map((d, i) => {
-          const data = d.data();
-          return {
-            rank: i + 1,
-            userId: d.id,
-            displayName: data.displayName ?? 'EcoHero',
-            avatar: data.avatar ?? '🌱',
-            totalPoints: data.totalPoints ?? 0,
-            level: data.level ?? 1,
-            currentStreak: data.currentStreak ?? 0,
-            badgeCount: (data.badges ?? []).length,
-          };
-        });
-        setEntries(list);
-
-        if (user) {
-          const myRank = list.findIndex((e) => e.userId === user.id);
-          setUserRank(myRank >= 0 ? myRank + 1 : null);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchLeaderboard();
-  }, [user]);
+    fetchLeaderboard(period);
+  }, [period, fetchLeaderboard]);
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-800">Leaderboard</h1>
-        <p className="text-gray-500 text-sm mt-1">Top eco-heroes this week</p>
+        <p className="text-gray-500 text-sm mt-1">Top eco-heroes competing for the planet</p>
+      </div>
+
+      {/* Period toggle */}
+      <div className="flex bg-gray-100 rounded-xl p-1">
+        {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
+          <button
+            key={p}
+            onClick={() => setPeriod(p)}
+            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+              period === p
+                ? 'bg-white text-green-700 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            {PERIOD_LABELS[p]}
+          </button>
+        ))}
       </div>
 
       {/* User rank card */}
@@ -96,12 +108,17 @@ export default function LeaderboardPage() {
       ) : entries.length === 0 ? (
         <div className="text-center py-12">
           <div className="text-4xl mb-3">🌱</div>
-          <p className="text-gray-500">No entries yet. Be the first!</p>
+          <p className="text-gray-500">No entries yet for {PERIOD_LABELS[period].toLowerCase()}.</p>
+          <p className="text-gray-400 text-sm mt-1">Log an action to get on the board!</p>
         </div>
       ) : (
         <div className="space-y-2">
           {entries.map((entry) => {
             const isCurrentUser = entry.userId === user?.id;
+            const displayName = entry.isAnonymous
+              ? 'Anonymous EcoHero 🌿'
+              : entry.displayName;
+
             return (
               <div
                 key={entry.userId}
@@ -112,7 +129,7 @@ export default function LeaderboardPage() {
                 }`}
               >
                 {/* Rank */}
-                <div className="w-8 text-center">
+                <div className="w-8 text-center flex-shrink-0">
                   {entry.rank <= 3 ? (
                     <span className="text-xl">{MEDAL[entry.rank - 1]}</span>
                   ) : (
@@ -121,24 +138,30 @@ export default function LeaderboardPage() {
                 </div>
 
                 {/* Avatar */}
-                <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-xl border-2 border-green-100">
+                <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-xl border-2 border-green-100 flex-shrink-0">
                   {entry.avatar}
                 </div>
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <p className={`font-medium truncate ${isCurrentUser ? 'text-green-800' : 'text-gray-800'}`}>
-                    {entry.displayName}
-                    {isCurrentUser && <span className="text-green-600 text-xs ml-1">(you)</span>}
-                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <p className={`font-medium truncate text-sm ${isCurrentUser ? 'text-green-800' : 'text-gray-800'}`}>
+                      {displayName}
+                    </p>
+                    {isCurrentUser && (
+                      <span className="text-xs bg-green-600 text-white px-1.5 py-0.5 rounded-full font-medium flex-shrink-0">
+                        You
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-gray-400">
-                    Lv.{entry.level} • 🔥{entry.currentStreak} streak • 🏅{entry.badgeCount} badges
+                    Lv.{entry.level} • 🔥{entry.streak} streak • 🏅{entry.badges} badges
                   </p>
                 </div>
 
                 {/* Points */}
                 <div className="text-right flex-shrink-0">
-                  <p className="font-bold text-green-600">{entry.totalPoints.toLocaleString()}</p>
+                  <p className="font-bold text-green-600">{entry.points.toLocaleString()}</p>
                   <p className="text-xs text-gray-400">points</p>
                 </div>
               </div>
