@@ -9,6 +9,8 @@ import { useAuthStore } from '../../../../lib/store/auth.store';
 import { useHabitsStore } from '../../../../lib/store/habits.store';
 import { getTodayPoints } from '../../../../lib/services/habits';
 import { z } from 'zod';
+import { queueHabitLog, flushQueuedLogs } from '../../../../lib/offline/habit-queue';
+import { trackHabitLogged } from '../../../../lib/services/analytics';
 
 const WASTE_TYPES = [
   { id: 'plastic', icon: '🥤', label: 'Plastic', pts: 10 },
@@ -67,7 +69,13 @@ function LogForm() {
   const [uploadProgress, setUploadProgress] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [offlineQueued, setOfflineQueued] = useState(false);
   const [success, setSuccess] = useState<{ points: number; badges: string[] } | null>(null);
+  const [showReflection, setShowReflection] = useState(false);
+  const [reflectionMood, setReflectionMood] = useState<number | null>(null);
+  const [reflectionNote, setReflectionNote] = useState('');
+  const [habitLogId, setHabitLogId] = useState('');
+  const [pendingSuccess, setPendingSuccess] = useState<{ points: number; badges: string[] } | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   // Initialize todayPoints from Firestore on mount if store is empty
@@ -78,6 +86,13 @@ function LogForm() {
       });
     }
   }, [user, todayPoints, setTodayPoints]);
+
+  // Flush queued offline logs on mount if online
+  useEffect(() => {
+    if (typeof window !== 'undefined' && navigator.onLine) {
+      flushQueuedLogs().catch(() => { /* ignore */ });
+    }
+  }, []);
 
   const selectedType = WASTE_TYPES.find((wt) => wt.id === wasteType) ?? WASTE_TYPES[0];
   const estimatedPoints = (selectedType?.pts ?? 5) * quantity;
@@ -133,17 +148,19 @@ function LogForm() {
         setUploadProgress(false);
       }
 
+      const requestBody = { wasteType, quantity, notes, userId: user?.id, photoUrl };
       const res = await fetch('/api/habits/log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ wasteType, quantity, notes, userId: user?.id, photoUrl }),
+        body: JSON.stringify(requestBody),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Failed to log');
 
       // Update local store
+      const logId = data.logId ?? crypto.randomUUID();
       addLog({
-        id: data.logId ?? crypto.randomUUID(),
+        id: logId,
         userId: user?.id ?? '',
         wasteType,
         quantity,
@@ -154,17 +171,92 @@ function LogForm() {
         waterSaved: data.waterSaved ?? 0,
       });
 
-      setSuccess({
+      // Track analytics
+      trackHabitLogged(wasteType, data.pointsEarned).catch(() => {});
+
+      const successData = {
         points: data.pointsEarned,
         badges: (data.newBadges ?? []).map((b: { id: string; name: string }) => b.name),
-      });
+      };
+
+      // Show reflection modal before success screen
+      setHabitLogId(logId);
+      setPendingSuccess(successData);
+      setShowReflection(true);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to log action');
+      // If network error (offline), queue the log
+      if (err instanceof TypeError && err.message.includes('fetch')) {
+        try {
+          const requestBody = { wasteType, quantity, notes, userId: user?.id };
+          await queueHabitLog(requestBody as Record<string, unknown>);
+          setOfflineQueued(true);
+        } catch {
+          setError('Failed to queue action for offline sync');
+        }
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to log action');
+      }
     } finally {
       setLoading(false);
       setUploadProgress(false);
     }
   };
+
+  const saveReflection = async () => {
+    if (!user?.id || !habitLogId) return;
+    try {
+      await fetch('/api/reflection', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          habitLogId,
+          mood: reflectionMood ?? 3,
+          note: reflectionNote || undefined,
+          wasteType,
+        }),
+      });
+    } catch { /* silently fail */ }
+    setShowReflection(false);
+    setReflectionMood(null);
+    setReflectionNote('');
+    if (pendingSuccess) setSuccess(pendingSuccess);
+  };
+
+  const skipReflection = () => {
+    setShowReflection(false);
+    setReflectionMood(null);
+    setReflectionNote('');
+    if (pendingSuccess) setSuccess(pendingSuccess);
+  };
+
+  if (offlineQueued) {
+    return (
+      <div className="max-w-lg mx-auto px-4 py-6">
+        <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
+          <div className="text-5xl mb-4">📡</div>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">Saved Offline</h2>
+          <p className="text-gray-500 mb-6 text-sm">
+            Your action has been queued and will sync automatically when you reconnect.
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setOfflineQueued(false)}
+              className="flex-1 border border-green-600 text-green-600 py-3 rounded-xl font-medium"
+            >
+              Log Another
+            </button>
+            <button
+              onClick={() => router.push('/home')}
+              className="flex-1 bg-green-600 text-white py-3 rounded-xl font-semibold"
+            >
+              Go Home
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (success) {
     return (
@@ -226,6 +318,53 @@ function LogForm() {
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
+      {/* Reflection modal */}
+      {showReflection && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm">
+            <h2 className="text-lg font-bold text-gray-800 mb-4 text-center">How do you feel?</h2>
+            <div className="flex justify-center gap-3 mb-4">
+              {([1, 2, 3, 4, 5] as const).map((val) => {
+                const emojis: Record<number, string> = { 1: '😔', 2: '😐', 3: '🙂', 4: '😊', 5: '🤩' };
+                return (
+                  <button
+                    key={val}
+                    onClick={() => setReflectionMood(val)}
+                    className={`text-3xl p-2 rounded-xl transition-all ${
+                      reflectionMood === val ? 'bg-green-100 scale-110' : 'hover:bg-gray-100'
+                    }`}
+                  >
+                    {emojis[val]}
+                  </button>
+                );
+              })}
+            </div>
+            <textarea
+              value={reflectionNote}
+              onChange={(e) => setReflectionNote(e.target.value)}
+              placeholder="Any thoughts on your action today? (optional)"
+              maxLength={300}
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-500 mb-4"
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={skipReflection}
+                className="flex-1 border border-gray-200 text-gray-500 py-3 rounded-xl font-medium text-sm"
+              >
+                Skip
+              </button>
+              <button
+                onClick={saveReflection}
+                className="flex-1 bg-green-600 text-white py-3 rounded-xl font-semibold text-sm"
+              >
+                Save Reflection
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center gap-3">
         <button onClick={() => router.back()} className="text-gray-500 hover:text-gray-700">
           ← Back

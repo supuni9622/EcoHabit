@@ -6,6 +6,9 @@ import { doc, updateDoc, serverTimestamp, arrayUnion } from 'firebase/firestore'
 import { db } from '../../../../lib/firebase/config';
 import { useAuthStore } from '../../../../lib/store/auth.store';
 import { useGamificationStore } from '../../../../lib/store/gamification.store';
+import { LessonQuiz } from '../../../../components/lessons/LessonQuiz';
+import type { QuizQuestion } from '../../../../components/lessons/LessonQuiz';
+import { trackLessonCompleted } from '../../../../lib/services/analytics';
 
 const LESSONS_DATA: Record<
   string,
@@ -18,6 +21,7 @@ const LESSONS_DATA: Record<
     reflection: string;
     facts: string[];
     points: number;
+    quiz: QuizQuestion[];
   }
 > = {
   '1': {
@@ -43,6 +47,29 @@ Your plastic recycling actions, no matter how small, are part of this global mov
       'Sri Lanka banned single-use plastics in 2020',
     ],
     points: 50,
+    quiz: [
+      {
+        type: 'multiple-choice',
+        question: 'How long does a plastic bottle take to decompose?',
+        options: ['10 years', '100 years', '450 years', '1000 years'],
+        correctIndex: 2,
+        explanation: 'Plastic bottles can take up to 450 years to decompose in a landfill.',
+      },
+      {
+        type: 'true-false',
+        question: 'Only 9% of all plastic ever produced has been recycled.',
+        options: ['True', 'False'],
+        correctIndex: 0,
+        explanation: 'Despite decades of recycling programs, only about 9% of all plastic ever produced has been formally recycled.',
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What did Sri Lanka ban in 2020?',
+        options: ['Glass bottles', 'Aluminum cans', 'Single-use plastics', 'Paper bags'],
+        correctIndex: 2,
+        explanation: 'Sri Lanka was one of the first countries in Asia to ban single-use plastic items in 2020.',
+      },
+    ],
   },
   '2': {
     day: 2,
@@ -67,6 +94,29 @@ When you sort your newspapers, cardboard boxes, and office paper for recycling, 
       'Recycled paper uses 60% less water to produce',
     ],
     points: 50,
+    quiz: [
+      {
+        type: 'multiple-choice',
+        question: 'How many trees does recycling 1 ton of paper save?',
+        options: ['5 trees', '10 trees', '17 trees', '25 trees'],
+        correctIndex: 2,
+        explanation: 'Recycling one ton of paper saves approximately 17 trees from being cut down.',
+      },
+      {
+        type: 'true-false',
+        question: 'Paper can be recycled indefinitely.',
+        options: ['True', 'False'],
+        correctIndex: 1,
+        explanation: 'Paper fibers shorten with each recycling cycle — paper can typically be recycled 5-7 times before the fibers are too short.',
+      },
+      {
+        type: 'multiple-choice',
+        question: 'Recycled paper uses what percentage less water than virgin paper?',
+        options: ['20%', '40%', '60%', '80%'],
+        correctIndex: 2,
+        explanation: 'Producing recycled paper uses approximately 60% less water compared to making paper from fresh wood pulp.',
+      },
+    ],
   },
   '3': {
     day: 3,
@@ -91,6 +141,29 @@ Before replacing any device, ask: can it be repaired? Can I donate it?`,
       'Properly recycled electronics recover valuable materials worth billions',
     ],
     points: 50,
+    quiz: [
+      {
+        type: 'multiple-choice',
+        question: 'What percentage of e-waste was formally recycled in 2019?',
+        options: ['5%', '17.4%', '35%', '50%'],
+        correctIndex: 1,
+        explanation: 'Only 17.4% of the 53.6 million tonnes of e-waste generated in 2019 was formally recycled.',
+      },
+      {
+        type: 'true-false',
+        question: 'A smartphone contains materials from more than 60 elements of the periodic table.',
+        options: ['True', 'False'],
+        correctIndex: 0,
+        explanation: 'Modern smartphones are remarkably complex — they contain over 60 different elements including gold, silver, copper, and rare earth metals.',
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What is the most sustainable approach to electronics?',
+        options: ['Buy the newest model', 'Extend your current device\'s life', 'Donate old devices', 'Recycle immediately'],
+        correctIndex: 1,
+        explanation: 'The most sustainable device is the one you already have — extending its life by even one year significantly reduces your carbon footprint.',
+      },
+    ],
   },
   '4': {
     day: 4,
@@ -117,6 +190,29 @@ In just 2-3 months, your waste transforms into black gold for gardens.`,
       'Methane from landfills is 80x more potent than CO₂',
     ],
     points: 50,
+    quiz: [
+      {
+        type: 'multiple-choice',
+        question: 'What percentage of greenhouse gas emissions does food waste generate?',
+        options: ['2%', '5%', '8%', '12%'],
+        correctIndex: 2,
+        explanation: 'Food waste is responsible for approximately 8% of global greenhouse gas emissions.',
+      },
+      {
+        type: 'true-false',
+        question: 'Meat and dairy can be safely composted in a home compost bin.',
+        options: ['True', 'False'],
+        correctIndex: 1,
+        explanation: 'Meat, dairy, and oily foods should not go in a home compost — they attract pests and create odors. Stick to fruit/vegetable scraps, coffee grounds, and paper.',
+      },
+      {
+        type: 'multiple-choice',
+        question: 'How much more potent than CO₂ is methane over 20 years?',
+        options: ['10x', '30x', '80x', '200x'],
+        correctIndex: 2,
+        explanation: 'Methane, produced when food waste decomposes in landfills without oxygen, is 80 times more potent than CO₂ over a 20-year period.',
+      },
+    ],
   },
   '5': {
     day: 5,
@@ -141,6 +237,29 @@ Every time you choose a reusable bag, repair instead of replace, or buy second-h
       'The EU circular economy action plan targets 70% recycling by 2030',
     ],
     points: 50,
+    quiz: [
+      {
+        type: 'multiple-choice',
+        question: 'What economic benefit could a circular economy generate by 2030?',
+        options: ['$1 trillion', '$2.5 trillion', '$4.5 trillion', '$8 trillion'],
+        correctIndex: 2,
+        explanation: 'Transitioning to a circular economy model could generate $4.5 trillion in economic benefits by 2030.',
+      },
+      {
+        type: 'true-false',
+        question: 'In a circular economy, recycling is the first and most important step.',
+        options: ['True', 'False'],
+        correctIndex: 1,
+        explanation: 'Recycling is actually the last resort in the circular economy hierarchy. The full order is: Refuse → Reduce → Reuse → Repair → Refurbish → Recycle.',
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What does \'cradle to cradle\' mean?',
+        options: ['Products are made from baby materials', 'Products are designed to be perpetually recycled', 'Products are biodegradable', 'Products are cheap to replace'],
+        correctIndex: 1,
+        explanation: 'Cradle to cradle means designing products so materials never become waste — they cycle back into new products indefinitely.',
+      },
+    ],
   },
   '6': {
     day: 6,
@@ -165,6 +284,29 @@ You can help by rinsing glass containers, removing caps and lids, and keeping gl
       'Making glass from recycled cullet uses 30% less energy than virgin materials',
     ],
     points: 50,
+    quiz: [
+      {
+        type: 'multiple-choice',
+        question: 'How many times can glass be recycled?',
+        options: ['3 times', '10 times', 'Infinitely', '5 times'],
+        correctIndex: 2,
+        explanation: 'Unlike paper or plastic, glass can be recycled infinitely without any loss in quality or purity.',
+      },
+      {
+        type: 'true-false',
+        question: 'Recycling glass saves energy compared to making new glass.',
+        options: ['True', 'False'],
+        correctIndex: 0,
+        explanation: 'Recycling glass uses about 40% less energy than producing new glass from raw materials like sand and limestone.',
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What color of glass is most commonly recycled?',
+        options: ['Blue', 'Green', 'Clear/Flint', 'Brown/Amber'],
+        correctIndex: 2,
+        explanation: 'Clear (flint) glass is the most commonly recycled because it\'s the most versatile — it can be remelted into any color.',
+      },
+    ],
   },
   '7': {
     day: 7,
@@ -189,6 +331,29 @@ When you save your aluminum cans and steel tins for recycling, you're participat
       'Steel is the most recycled material in the world by weight',
     ],
     points: 50,
+    quiz: [
+      {
+        type: 'multiple-choice',
+        question: 'How much energy does recycling aluminum save vs. virgin production?',
+        options: ['50%', '70%', '85%', '95%'],
+        correctIndex: 3,
+        explanation: 'Recycling aluminum saves an astounding 95% of the energy required to produce it from raw bauxite ore.',
+      },
+      {
+        type: 'true-false',
+        question: 'Steel is the most recycled material in the world by weight.',
+        options: ['True', 'False'],
+        correctIndex: 0,
+        explanation: 'Steel is the world\'s most recycled material — more steel is recycled each year than all other materials combined.',
+      },
+      {
+        type: 'multiple-choice',
+        question: 'An aluminum can recycled today could be back on the shelf in:',
+        options: ['1 week', '60 days', '6 months', '1 year'],
+        correctIndex: 1,
+        explanation: 'Aluminum is one of the fastest-cycling recyclables — a can recycled today can be back on the shelf as a new can in as little as 60 days.',
+      },
+    ],
   },
   '8': {
     day: 8,
@@ -213,6 +378,29 @@ In Colombo and Kandy, several organizations now accept donated clothing. Even ta
       'Extending a garment\'s life by 9 months reduces its carbon footprint by 30%',
     ],
     points: 50,
+    quiz: [
+      {
+        type: 'multiple-choice',
+        question: 'How many kilograms of clothing does the average person discard per year?',
+        options: ['5 kg', '12 kg', '20 kg', '35 kg'],
+        correctIndex: 1,
+        explanation: 'On average, each person discards about 12 kilograms of clothing per year, most of which ends up in landfills.',
+      },
+      {
+        type: 'true-false',
+        question: 'Synthetic fabrics like polyester are easy to recycle.',
+        options: ['True', 'False'],
+        correctIndex: 1,
+        explanation: 'Synthetic fabrics are notoriously difficult to recycle. They\'re made from plastic polymers and often blended with natural fibers, making separation challenging.',
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What is the most eco-friendly first step for unwanted clothing?',
+        options: ['Throw it away', 'Burn it', 'Donate or swap it', 'Cut it into rags'],
+        correctIndex: 2,
+        explanation: 'Donating or swapping clothing extends its life and keeps it out of landfill — this is always the preferred option before considering any form of disposal.',
+      },
+    ],
   },
   '9': {
     day: 9,
@@ -237,6 +425,29 @@ Lead-acid batteries from vehicles and UPS units are the highest-volume hazardous
       'Lead-acid batteries are 99% recyclable and have real scrap value',
     ],
     points: 50,
+    quiz: [
+      {
+        type: 'multiple-choice',
+        question: 'Where should old batteries be disposed of?',
+        options: ['General trash', 'Recycling bin', 'Designated battery collection points', 'Down the drain'],
+        correctIndex: 2,
+        explanation: 'Batteries contain heavy metals like mercury, lead, and cadmium. They must go to designated battery collection points, not general waste.',
+      },
+      {
+        type: 'true-false',
+        question: 'Fluorescent light bulbs can be safely thrown in the general trash.',
+        options: ['True', 'False'],
+        correctIndex: 1,
+        explanation: 'Fluorescent bulbs contain mercury vapor. They must be taken to hazardous waste collection points or hardware stores that accept them.',
+      },
+      {
+        type: 'multiple-choice',
+        question: 'Which common household product is considered hazardous waste?',
+        options: ['Cardboard boxes', 'Plastic bottles', 'Paint cans', 'Newspapers'],
+        correctIndex: 2,
+        explanation: 'Leftover paint is classified as hazardous household waste. It should be taken to a hazardous waste collection event, never poured down drains.',
+      },
+    ],
   },
   '10': {
     day: 10,
@@ -261,6 +472,29 @@ Every piece of plastic that doesn't make it to a bin has a chance of reaching th
       'Microplastics have been found in fish sold in Sri Lankan markets',
     ],
     points: 50,
+    quiz: [
+      {
+        type: 'multiple-choice',
+        question: 'How many tonnes of plastic enter our oceans each year?',
+        options: ['1 million', '8 million', '20 million', '50 million'],
+        correctIndex: 1,
+        explanation: 'Approximately 8 million tonnes of plastic enter our oceans every year — equivalent to dumping a garbage truck\'s worth every minute.',
+      },
+      {
+        type: 'true-false',
+        question: 'Microplastics have been found in human blood.',
+        options: ['True', 'False'],
+        correctIndex: 0,
+        explanation: 'A 2022 study published in Environment International found microplastics in the bloodstream of 77% of people tested — a disturbing indicator of plastic pollution\'s reach.',
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What is \'ghost fishing\'?',
+        options: ['Fishing at night', 'Abandoned fishing gear continuing to trap marine life', 'Fishing in protected waters', 'Using invisible fishing line'],
+        correctIndex: 1,
+        explanation: 'Ghost fishing refers to the phenomenon of lost or abandoned fishing nets and gear that continue to trap and kill marine animals for years.',
+      },
+    ],
   },
   '11': {
     day: 11,
@@ -285,6 +519,29 @@ Your daily eco-habits are climate action.`,
       'Sri Lanka has committed to carbon neutrality by 2050',
     ],
     points: 50,
+    quiz: [
+      {
+        type: 'multiple-choice',
+        question: 'What percentage of global greenhouse gas emissions does waste management contribute?',
+        options: ['2%', '5%', '10%', '15%'],
+        correctIndex: 1,
+        explanation: 'Waste management contributes approximately 5% of global greenhouse gas emissions — more than the entire aviation industry.',
+      },
+      {
+        type: 'true-false',
+        question: 'Reducing waste is a direct form of climate action.',
+        options: ['True', 'False'],
+        correctIndex: 0,
+        explanation: 'Waste management accounts for 5% of global greenhouse gas emissions — by recycling, composting, and reducing waste, you directly cut methane and CO₂ from landfills.',
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What year has Sri Lanka committed to carbon neutrality?',
+        options: ['2030', '2040', '2050', '2060'],
+        correctIndex: 2,
+        explanation: 'Sri Lanka has committed to reaching carbon neutrality by 2050, and waste reduction is one of the most accessible ways individuals can contribute.',
+      },
+    ],
   },
   '12': {
     day: 12,
@@ -309,6 +566,29 @@ At home, meal planning, buying what you need, storing food properly, and compost
       'Reducing food waste is one of the highest-impact climate actions available',
     ],
     points: 50,
+    quiz: [
+      {
+        type: 'multiple-choice',
+        question: 'What percentage of all food produced globally is wasted?',
+        options: ['10%', '20%', '33%', '50%'],
+        correctIndex: 2,
+        explanation: 'One third (33%) of all food produced for human consumption is lost or wasted globally, amounting to $1 trillion in value annually.',
+      },
+      {
+        type: 'true-false',
+        question: 'Wasted food only affects our food system, not our climate.',
+        options: ['True', 'False'],
+        correctIndex: 1,
+        explanation: '$1 trillion in food is wasted globally each year — and it all ends up generating landfill emissions through methane production.',
+      },
+      {
+        type: 'multiple-choice',
+        question: 'Which is NOT one of the four pillars of home food waste reduction?',
+        options: ['Meal planning', 'Buying what you need', 'Storing food properly', 'Always buying in bulk'],
+        correctIndex: 3,
+        explanation: 'The four pillars are: meal planning, buying what you need, storing food properly, and composting what can\'t be used. Buying in bulk can sometimes lead to more waste.',
+      },
+    ],
   },
   '13': {
     day: 13,
@@ -333,6 +613,29 @@ The best upcycling project is one you make yourself. A jam jar becomes a vase. A
       'Upcycling one glass jar saves the energy needed to power a TV for 1.5 hours',
     ],
     points: 50,
+    quiz: [
+      {
+        type: 'multiple-choice',
+        question: 'How much is the global upcycled fashion market worth?',
+        options: ['$1 billion', '$3 billion', '$7 billion', '$15 billion'],
+        correctIndex: 2,
+        explanation: 'The global upcycled fashion market is worth over $7 billion, showing that creativity and sustainability can be commercially successful.',
+      },
+      {
+        type: 'true-false',
+        question: 'Upcycling and recycling are the same process.',
+        options: ['True', 'False'],
+        correctIndex: 1,
+        explanation: 'Upcycling keeps the object largely intact and adds value — unlike recycling which breaks materials down to raw form. Creativity is the most powerful recycling tool.',
+      },
+      {
+        type: 'multiple-choice',
+        question: 'Which traditional Sri Lankan practice is an example of upcycling?',
+        options: ['Buying new products', 'Making bowls from coconut shells', 'Landfilling old materials', 'Importing recycled goods'],
+        correctIndex: 1,
+        explanation: 'In Sri Lanka, coconut shells become bowls and spoons, rubber tyres become garden planters, and old saris become quilts — these are classic examples of upcycling.',
+      },
+    ],
   },
   '14': {
     day: 14,
@@ -357,6 +660,29 @@ As a consumer, you hold power: buying from brands with strong environmental prac
       'Consumer pressure has led 400+ companies to make plastic reduction pledges',
     ],
     points: 50,
+    quiz: [
+      {
+        type: 'multiple-choice',
+        question: 'What percentage of single-use plastic waste do just 20 companies produce?',
+        options: ['20%', '35%', '55%', '80%'],
+        correctIndex: 2,
+        explanation: 'Just 20 companies produce 55% of all single-use plastic waste globally, showing that corporate accountability is essential to solving the plastic crisis.',
+      },
+      {
+        type: 'true-false',
+        question: 'Individual consumer choices have no impact on corporate environmental behavior.',
+        options: ['True', 'False'],
+        correctIndex: 1,
+        explanation: 'Corporations that create packaging must be held responsible — and consumer pressure has already led 400+ companies to make plastic reduction pledges.',
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What does EPR stand for?',
+        options: ['Extended Product Regulations', 'Environmental Protection Requirements', 'Extended Producer Responsibility', 'Eco-Packaging Reform'],
+        correctIndex: 2,
+        explanation: 'EPR stands for Extended Producer Responsibility — a policy approach that holds manufacturers financially responsible for the end-of-life management of their products.',
+      },
+    ],
   },
   '15': {
     day: 15,
@@ -381,6 +707,29 @@ Zero waste is not a certification to achieve — it is a daily practice. Each sm
       'The 5Rs hierarchy reduces waste more effectively than recycling alone',
     ],
     points: 50,
+    quiz: [
+      {
+        type: 'multiple-choice',
+        question: 'How much waste does the average person generate per day?',
+        options: ['0.5 kg', '1.8 kg', '3 kg', '5 kg'],
+        correctIndex: 1,
+        explanation: 'The average person generates about 4 lbs (1.8 kg) of waste per day. Zero waste households can divert over 90% of this from landfill.',
+      },
+      {
+        type: 'true-false',
+        question: 'Zero waste means producing absolutely no waste whatsoever.',
+        options: ['True', 'False'],
+        correctIndex: 1,
+        explanation: 'Zero waste is a direction, not a destination — the 5Rs (Refuse, Reduce, Reuse, Recycle, Rot) are your guide, not perfection.',
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What is the FIRST step in the zero waste 5Rs hierarchy?',
+        options: ['Recycle', 'Reduce', 'Refuse', 'Reuse'],
+        correctIndex: 2,
+        explanation: 'The Zero Waste hierarchy starts with Refuse — saying no to things you don\'t need. This is the most effective step because it prevents waste from being created at all.',
+      },
+    ],
   },
   '16': {
     day: 16,
@@ -405,6 +754,29 @@ In Sri Lanka, composting infrastructure is limited outside of home composting. U
       'Less packaging is almost always better than "eco-friendly" packaging',
     ],
     points: 50,
+    quiz: [
+      {
+        type: 'multiple-choice',
+        question: 'How long can "biodegradable" plastic take to break down in a landfill?',
+        options: ['A few days', 'A few months', 'Several years to decades', 'It never breaks down'],
+        correctIndex: 2,
+        explanation: '"Biodegradable" plastic can still take decades to break down in landfills — the label doesn\'t guarantee eco-safety.',
+      },
+      {
+        type: 'true-false',
+        question: '"Compostable" packaging is always the most eco-friendly choice.',
+        options: ['True', 'False'],
+        correctIndex: 1,
+        explanation: '"Biodegradable" doesn\'t mean eco-safe — always check if Sri Lanka has the infrastructure to process it. Less packaging is almost always better than "eco-friendly" packaging.',
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What happens to compostable packaging in a landfill?',
+        options: ['It breaks down cleanly', 'It generates methane', 'It disappears quickly', 'It becomes fertilizer'],
+        correctIndex: 1,
+        explanation: 'In landfills, compostable items decompose anaerobically and generate methane — exactly like conventional plastic or food waste.',
+      },
+    ],
   },
   '17': {
     day: 17,
@@ -429,6 +801,29 @@ Access to clean water is a human right. Responsible waste management is one of t
       'Landfill leachate can contaminate groundwater with toxic heavy metals',
     ],
     points: 50,
+    quiz: [
+      {
+        type: 'multiple-choice',
+        question: 'What percentage of the world\'s wastewater is discharged untreated?',
+        options: ['30%', '50%', '80%', '100%'],
+        correctIndex: 2,
+        explanation: '80% of the world\'s wastewater is discharged untreated into water bodies, making proper waste management critical for clean water access.',
+      },
+      {
+        type: 'true-false',
+        question: 'Plastic in drains has no effect on flooding during monsoons.',
+        options: ['True', 'False'],
+        correctIndex: 1,
+        explanation: 'Proper waste disposal protects clean water — plastic in drains causes flooding during Sri Lanka\'s monsoons, and landfill leachate contaminates wells.',
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What is "leachate"?',
+        options: ['A type of compost', 'Toxic liquid from decomposing landfill waste', 'Clean water from rivers', 'A recycling chemical'],
+        correctIndex: 1,
+        explanation: 'Leachate is the toxic liquid that forms when waste decomposes and mixes with rainwater in landfills. It can contaminate groundwater with heavy metals.',
+      },
+    ],
   },
   '18': {
     day: 18,
@@ -455,6 +850,29 @@ Every piece of plastic you keep out of the environment is a step toward protecti
       'Microplastics have been found in 73% of fish caught in the Indian Ocean',
     ],
     points: 50,
+    quiz: [
+      {
+        type: 'multiple-choice',
+        question: 'How many marine species are threatened by ocean plastic globally?',
+        options: ['Over 100', 'Over 300', 'Over 700', 'Over 1,000'],
+        correctIndex: 2,
+        explanation: 'Over 700 marine species are threatened by ocean plastic globally — from sea turtles mistaking bags for jellyfish to fish ingesting microplastics.',
+      },
+      {
+        type: 'true-false',
+        question: 'Wildlife protection and waste management are unrelated causes.',
+        options: ['True', 'False'],
+        correctIndex: 1,
+        explanation: 'Dozens of Sri Lankan elephants have died from ingesting plastic waste at open dump sites — wildlife protection and waste management are the same cause.',
+      },
+      {
+        type: 'multiple-choice',
+        question: 'Why do sea turtles consume plastic bags?',
+        options: ['They are attracted to the color', 'They mistake them for jellyfish', 'They need the minerals', 'They are confused by the smell'],
+        correctIndex: 1,
+        explanation: 'Sea turtles mistake plastic bags for jellyfish — one of their primary food sources. This causes intestinal blockages and often death.',
+      },
+    ],
   },
   '19': {
     day: 19,
@@ -481,6 +899,29 @@ You don't need a formal organization to start a clean-up. Three friends, a few b
       'Community clean-ups reduce waste and build the social norms that prevent littering',
     ],
     points: 50,
+    quiz: [
+      {
+        type: 'multiple-choice',
+        question: 'How many clean-up posts did the #trashtag challenge generate in one month?',
+        options: ['10,000+', '50,000+', '100,000+', '1,000,000+'],
+        correctIndex: 2,
+        explanation: 'The #trashtag challenge on social media generated 100,000+ clean-up posts in just one month, turning litter picking into a global viral movement.',
+      },
+      {
+        type: 'true-false',
+        question: 'Community clean-ups only remove waste — they don\'t change community attitudes.',
+        options: ['True', 'False'],
+        correctIndex: 1,
+        explanation: 'Shramadana — Sri Lanka\'s tradition of voluntary community labor — is the foundation for a clean environment. Clean-ups also build civic pride and social norms that prevent littering.',
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What is "plogging"?',
+        options: ['A type of composting', 'Picking up litter while jogging', 'A recycling competition', 'Traditional Sri Lankan farming'],
+        correctIndex: 1,
+        explanation: 'Plogging — picking up litter while jogging — has become a global phenomenon, combining fitness with environmental action.',
+      },
+    ],
   },
   '20': {
     day: 20,
@@ -507,6 +948,29 @@ If you have children in your family, talk to them about what they learn about th
       'Schools with composting programs divert up to 40% of their waste from landfill',
     ],
     points: 50,
+    quiz: [
+      {
+        type: 'multiple-choice',
+        question: 'What percentage of school waste can composting programs divert from landfill?',
+        options: ['10%', '20%', '40%', '60%'],
+        correctIndex: 2,
+        explanation: 'Schools with composting programs can divert up to 40% of their waste from landfill — making them models of sustainability for their communities.',
+      },
+      {
+        type: 'true-false',
+        question: 'Environmental habits learned in childhood rarely persist into adulthood.',
+        options: ['True', 'False'],
+        correctIndex: 1,
+        explanation: 'Environmental education in schools creates lifelong habits — children are multipliers of eco-impact, carrying these habits into adulthood and teaching their own children.',
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What is Japan\'s "Soji" practice?',
+        options: ['A type of composting', 'Students cleaning their own school daily', 'A recycling game', 'An environmental festival'],
+        correctIndex: 1,
+        explanation: 'Japan\'s "Soji" is a daily school cleaning ritual where students clean their classrooms and school premises — no janitors needed. It has helped shape one of the world\'s cleanest societies.',
+      },
+    ],
   },
   '21': {
     day: 21,
@@ -533,6 +997,29 @@ Policy change is slow but durable. Every individual who understands the law — 
       'EPR policies in the EU have driven packaging recycling above 70%',
     ],
     points: 50,
+    quiz: [
+      {
+        type: 'multiple-choice',
+        question: 'What did Sri Lanka ban in 2020?',
+        options: ['Glass bottles', 'Aluminum cans', 'Single-use polythene bags and straws', 'Paper bags'],
+        correctIndex: 2,
+        explanation: 'Sri Lanka made international headlines in 2020 by banning single-use polythene bags, straws, and certain food containers.',
+      },
+      {
+        type: 'true-false',
+        question: 'Sri Lanka\'s plastic ban shows that policy cannot rapidly change consumer behavior.',
+        options: ['True', 'False'],
+        correctIndex: 1,
+        explanation: 'Sri Lanka\'s 2020 plastic ban shows policy can rapidly change behavior — engaged citizens make policy happen by advocating for and enforcing these changes.',
+      },
+      {
+        type: 'multiple-choice',
+        question: 'Which body enforces environmental regulations across Sri Lanka?',
+        options: ['The Police', 'The Central Environment Authority (CEA)', 'The Ministry of Finance', 'Local Municipal Councils'],
+        correctIndex: 1,
+        explanation: 'The Central Environment Authority (CEA) enforces environmental regulations, provides guidelines on safe disposal, and issues permits across Sri Lanka.',
+      },
+    ],
   },
   '22': {
     day: 22,
@@ -559,6 +1046,29 @@ Technology is not a silver bullet — reducing waste at source remains the prior
       'Biogas from organic waste can replace 30% of household cooking fuel',
     ],
     points: 50,
+    quiz: [
+      {
+        type: 'multiple-choice',
+        question: 'How much of household cooking fuel can biogas from organic waste replace?',
+        options: ['10%', '20%', '30%', '50%'],
+        correctIndex: 2,
+        explanation: 'Biogas digesters can convert organic waste into methane for cooking fuel — replacing up to 30% of household cooking fuel needs.',
+      },
+      {
+        type: 'true-false',
+        question: 'Technology alone is sufficient to solve the waste crisis without reducing waste at source.',
+        options: ['True', 'False'],
+        correctIndex: 1,
+        explanation: 'Technology — smart bins, waste-to-energy, plastic pyrolysis — is transforming what\'s possible, but technology is not a silver bullet. Reducing waste at source remains the priority.',
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What is plastic pyrolysis?',
+        options: ['A type of plastic recycling bin', 'Converting plastic waste back into fuel oil', 'Making plastic from plants', 'A plastic sorting machine'],
+        correctIndex: 1,
+        explanation: 'Plastic pyrolysis converts plastic waste back into fuel oil — emerging as a solution for mixed plastics that cannot be mechanically recycled.',
+      },
+    ],
   },
   '23': {
     day: 23,
@@ -583,6 +1093,29 @@ When you sell your recyclables to the local kalagedi vendor or scrap dealer, you
       'The informal recycling sector employs hundreds of thousands across South Asia',
     ],
     points: 50,
+    quiz: [
+      {
+        type: 'multiple-choice',
+        question: 'Compared to formal recycling systems, informal waste pickers recover:',
+        options: ['About the same amount', 'Less recyclables', 'More recyclables', 'Only hazardous materials'],
+        correctIndex: 2,
+        explanation: 'Estimates suggest informal waste pickers and collectors recover more recyclable material globally than all formal recycling systems combined.',
+      },
+      {
+        type: 'true-false',
+        question: 'Supporting kalagedi vendors has no environmental benefit.',
+        options: ['True', 'False'],
+        correctIndex: 1,
+        explanation: 'Sri Lanka\'s kalagedi vendors and scrap dealers are the unsung heroes of recycling — supporting them is supporting the circular economy and keeping materials out of landfills.',
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What does "IRRC" stand for in Sri Lanka\'s waste management?',
+        options: ['International Recycling Research Centre', 'Integrated Resource Recovery Centre', 'Industrial Rubber Recycling Company', 'Island-wide Refuse and Rubbish Collection'],
+        correctIndex: 1,
+        explanation: 'Integrated Resource Recovery Centres (IRRCs) aim to formalize and improve conditions for waste workers while maintaining their community knowledge and networks.',
+      },
+    ],
   },
   '24': {
     day: 24,
@@ -609,6 +1142,29 @@ You are not one person acting alone. You are part of a movement.`,
       'Personal behavior change is the most infectious form of social change',
     ],
     points: 50,
+    quiz: [
+      {
+        type: 'multiple-choice',
+        question: 'How much waste does the average Sri Lankan generate over a lifetime?',
+        options: ['5–10 tonnes', '13–27 tonnes', '30–50 tonnes', 'Over 100 tonnes'],
+        correctIndex: 1,
+        explanation: 'The average Sri Lankan generates 0.5–1 kg of waste per day. Over a lifetime of 75 years, that\'s between 13 and 27 tonnes of waste.',
+      },
+      {
+        type: 'true-false',
+        question: 'Individual eco-actions have no influence on the behavior of people around you.',
+        options: ['True', 'False'],
+        correctIndex: 1,
+        explanation: 'Your individual choices, multiplied across a lifetime and a community, create measurable environmental change. Visible recycling behavior increases recycling rates in neighbors by up to 12%.',
+      },
+      {
+        type: 'multiple-choice',
+        question: 'By how much does visible recycling behavior increase recycling rates in neighbors?',
+        options: ['2%', '5%', '12%', '25%'],
+        correctIndex: 2,
+        explanation: 'Research shows that visible recycling behavior increases recycling rates in neighbors by up to 12% — your actions inspire others around you.',
+      },
+    ],
   },
   '25': {
     day: 25,
@@ -637,6 +1193,29 @@ The future is now. And it needs you.`,
       'Sharing knowledge multiplies your impact — teach one person what you\'ve learned',
     ],
     points: 100,
+    quiz: [
+      {
+        type: 'multiple-choice',
+        question: 'What is the most effective way to reduce your carbon footprint?',
+        options: ['One large annual eco-action', 'Consistent daily eco-habits', 'Moving to a different country', 'Buying eco-certified products only'],
+        correctIndex: 1,
+        explanation: 'Consistent daily habits reduce carbon footprint more than occasional big gestures — every day matters.',
+      },
+      {
+        type: 'true-false',
+        question: 'Completing 25 EcoHabit lessons is something only a small fraction of users achieve.',
+        options: ['True', 'False'],
+        correctIndex: 0,
+        explanation: 'Fewer than 1% of users reach this milestone — your 25-day journey has transformed awareness into habit. Keep going, keep growing, keep leading.',
+      },
+      {
+        type: 'multiple-choice',
+        question: 'What is the most powerful way to multiply your environmental impact?',
+        options: ['Buy more eco-products', 'Share knowledge with others', 'Follow more eco accounts', 'Donate to charities'],
+        correctIndex: 1,
+        explanation: 'Sharing knowledge multiplies your impact — teaching one person what you\'ve learned creates a ripple effect that extends your eco-impact far beyond your own actions.',
+      },
+    ],
   },
 };
 
@@ -648,6 +1227,7 @@ export default function LessonPage() {
   const [slide, setSlide] = useState(0);
   const [completing, setCompleting] = useState(false);
   const [completed, setCompleted] = useState(false);
+  const [quizScore, setQuizScore] = useState(0);
 
   const day = params.day as string;
   const lesson = LESSONS_DATA[day];
@@ -665,10 +1245,13 @@ export default function LessonPage() {
   }
 
   const isCompleted = user?.completedLessons?.includes(day) ?? false;
+
+  // Slides: story(0), facts(1), reflection(2), quiz(3), complete(4)
   const slides = [
     { type: 'story', title: lesson.title },
     { type: 'facts', title: 'Key Facts' },
     { type: 'reflection', title: 'Reflection' },
+    { type: 'quiz', title: 'Quiz' },
     { type: 'complete', title: 'Mark Complete' },
   ];
 
@@ -686,10 +1269,17 @@ export default function LessonPage() {
         totalPoints: (user.totalPoints ?? 0) + lesson.points,
       });
       addPoints(lesson.points);
+      // Track analytics
+      trackLessonCompleted(lesson.day, quizScore).catch(() => {});
       setCompleted(true);
     } finally {
       setCompleting(false);
     }
+  };
+
+  const handleQuizComplete = (score: number) => {
+    setQuizScore(score);
+    setSlide(4); // advance to complete slide
   };
 
   if (completed) {
@@ -733,7 +1323,7 @@ export default function LessonPage() {
         <span className="ml-auto text-2xl">{lesson.icon}</span>
       </div>
 
-      {/* Progress dots */}
+      {/* Progress dots (5 total) */}
       <div className="flex items-center gap-2 justify-center">
         {slides.map((_, i) => (
           <div
@@ -788,9 +1378,21 @@ export default function LessonPage() {
         )}
 
         {slide === 3 && (
+          <div>
+            <h2 className="font-bold text-gray-800 mb-4">Knowledge Check</h2>
+            <LessonQuiz questions={lesson.quiz} onComplete={handleQuizComplete} />
+          </div>
+        )}
+
+        {slide === 4 && (
           <div className="text-center">
             <div className="text-5xl mb-4">🎯</div>
             <h2 className="font-bold text-gray-800 mb-2">Ready to complete?</h2>
+            {quizScore > 0 && (
+              <p className="text-sm text-green-600 mb-3">
+                Quiz score: {quizScore}/{lesson.quiz.length} correct 🌟
+              </p>
+            )}
             <p className="text-gray-500 text-sm mb-6">
               Mark this lesson as complete to earn your points reward
             </p>
@@ -813,7 +1415,7 @@ export default function LessonPage() {
         )}
       </div>
 
-      {/* Navigation */}
+      {/* Navigation — hide "Next" on quiz slide (quiz handles its own nav) */}
       <div className="flex gap-3">
         <button
           onClick={() => setSlide(Math.max(0, slide - 1))}
@@ -822,7 +1424,7 @@ export default function LessonPage() {
         >
           ← Previous
         </button>
-        {slide < slides.length - 1 && (
+        {slide < slides.length - 1 && slide !== 3 && (
           <button
             onClick={() => setSlide(slide + 1)}
             className="flex-1 bg-green-600 text-white py-3 rounded-xl font-semibold"

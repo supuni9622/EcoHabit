@@ -7,8 +7,8 @@ import { clsx } from 'clsx';
 const NAV_ITEMS = [
   { href: '/home', label: 'Home', icon: '🏠' },
   { href: '/habits', label: 'Log', icon: '♻️' },
+  { href: '/challenges', label: 'Challenges', icon: '🏆' },
   { href: '/lessons', label: 'Learn', icon: '📚' },
-  { href: '/map', label: 'Map', icon: '🗺️' },
   { href: '/profile', label: 'Profile', icon: '👤' },
 ];
 

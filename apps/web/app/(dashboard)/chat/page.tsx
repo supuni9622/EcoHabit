@@ -18,6 +18,7 @@ interface ChatMessage {
   content: string;
   type: 'user' | 'assistant';
   timestamp: Date;
+  firestoreId?: string; // Firestore doc ID, used for rating
 }
 
 const SUGGESTED_PROMPTS = [
@@ -41,6 +42,7 @@ export default function ChatPage() {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [ratings, setRatings] = useState<Record<string, 'up' | 'down'>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -69,6 +71,7 @@ export default function ChatPage() {
             : new Date();
           return {
             id: d.id ?? `hist-${i}`,
+            firestoreId: d.id,
             content: data.content as string,
             type: data.role === 'model' ? 'assistant' : 'user',
             timestamp: ts,
@@ -120,6 +123,7 @@ export default function ChatPage() {
 
       const assistantMsg: ChatMessage = {
         id: crypto.randomUUID(),
+        firestoreId: res.ok ? (data.messageId as string | undefined) : undefined,
         content: responseText,
         type: 'assistant',
         timestamp: new Date(),
@@ -137,6 +141,20 @@ export default function ChatPage() {
       ]);
     } finally {
       setIsTyping(false);
+    }
+  };
+
+  const rateMessage = async (msg: ChatMessage, rating: 'up' | 'down') => {
+    if (!msg.firestoreId || !user?.id) return;
+    setRatings((prev) => ({ ...prev, [msg.id]: rating }));
+    try {
+      await fetch('/api/ai/chat/rate', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messageId: msg.firestoreId, rating, userId: user.id }),
+      });
+    } catch {
+      // silent — optimistic UI is fine
     }
   };
 
@@ -190,29 +208,60 @@ export default function ChatPage() {
         {messages.map((msg) => (
           <div
             key={msg.id}
-            className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
+            className={`flex flex-col ${msg.type === 'user' ? 'items-end' : 'items-start'}`}
           >
-            {msg.type === 'assistant' && (
-              <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-base mr-2 flex-shrink-0 mt-1">
-                🤖
-              </div>
-            )}
-            <div
-              className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                msg.type === 'user'
-                  ? 'bg-green-600 text-white rounded-tr-sm'
-                  : 'bg-white text-gray-800 shadow-sm border border-gray-100 rounded-tl-sm'
-              }`}
-            >
-              <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-              <p
-                className={`text-xs mt-1 ${
-                  msg.type === 'user' ? 'text-green-100' : 'text-gray-400'
+            <div className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'} w-full`}>
+              {msg.type === 'assistant' && (
+                <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-base mr-2 flex-shrink-0 mt-1">
+                  🤖
+                </div>
+              )}
+              <div
+                className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                  msg.type === 'user'
+                    ? 'bg-green-600 text-white rounded-tr-sm'
+                    : 'bg-white text-gray-800 shadow-sm border border-gray-100 rounded-tl-sm'
                 }`}
               >
-                {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </p>
+                <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                <p
+                  className={`text-xs mt-1 ${
+                    msg.type === 'user' ? 'text-green-100' : 'text-gray-400'
+                  }`}
+                >
+                  {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </p>
+              </div>
             </div>
+            {/* Thumbs up/down rating for AI messages (not the welcome message) */}
+            {msg.type === 'assistant' && msg.id !== 'welcome' && (
+              <div className="flex items-center gap-1 ml-10 mt-1">
+                <button
+                  onClick={() => rateMessage(msg, 'up')}
+                  disabled={!!ratings[msg.id]}
+                  title="Helpful"
+                  className={`text-base px-1.5 py-0.5 rounded-lg transition-colors ${
+                    ratings[msg.id] === 'up'
+                      ? 'bg-green-100 text-green-600'
+                      : 'text-gray-300 hover:text-green-500 hover:bg-green-50'
+                  }`}
+                >
+                  👍
+                </button>
+                <button
+                  onClick={() => rateMessage(msg, 'down')}
+                  disabled={!!ratings[msg.id]}
+                  title="Not helpful"
+                  className={`text-base px-1.5 py-0.5 rounded-lg transition-colors ${
+                    ratings[msg.id] === 'down'
+                      ? 'bg-red-100 text-red-500'
+                      : 'text-gray-300 hover:text-red-400 hover:bg-red-50'
+                  }`}
+                >
+                  👎
+                </button>
+              </div>
+            )}
           </div>
         ))}
 

@@ -264,39 +264,40 @@ EcoHabit is a gamified waste-management & recycling PWA designed for Sri Lankan 
 ---
 
 ### Sprint 3 — Interactivity & PWA
-*In Progress — Next*
+*Complete — 2026-06-28*
 
 **Web — Lessons**
-- [ ] Interactive quiz: multiple-choice, true/false, drag-and-drop sort
-- [ ] Quiz score tracking + educational feedback on wrong answers
-- [ ] Lesson images loaded from Firebase Storage
+- [x] Interactive quiz: multiple-choice and true/false questions for all 25 lessons
+- [x] Quiz score tracking + educational feedback on wrong answers
+- [ ] Lesson images loaded from Firebase Storage *(Sprint 4)*
 
 **Web — AI Chat / Reflection**
-- [ ] Post-action daily reflection prompt modal
-- [ ] Save reflection responses + show 30-day history
-- [ ] Message rating (thumbs up / down)
+- [x] Post-action daily reflection prompt modal (mood + note)
+- [x] Save reflection responses + show 7-day history in profile
+- [x] Message rating (thumbs up / down)
+- [x] Streak-aware coaching prompts ("You're at a 7-day streak!")
 
 **Web — Social**
-- [ ] Community challenges page (join, track, complete)
-- [ ] Anonymous mode toggle on leaderboard
+- [x] Community challenges page (join, track, complete) with 4 challenges
+- [ ] Anonymous mode toggle on leaderboard *(already done Sprint 2)*
 
 **Web — PWA / Offline**
-- [ ] Service worker: app shell caching + static assets
-- [ ] Offline indicator banner
-- [ ] Queued habit logs (IndexedDB) + background sync
-- [ ] FCM push notifications: daily challenge reminder + streak alert + achievement
+- [x] Service worker: app shell caching + static assets (`public/sw.js`)
+- [x] Offline indicator banner (`OfflineBanner` component)
+- [x] Queued habit logs (IndexedDB) + background sync stub
+- [x] FCM push notifications infrastructure (token save, notifications service)
 
 **Firebase Functions**
-- [ ] `daily-reminder.ts` — FCM push at user-preferred time
-- [ ] `leaderboard-update.ts` — scheduled recalculation
+- [x] `daily-reminder.ts` — FCM push at 8 AM Asia/Colombo daily
+- [ ] `leaderboard-update.ts` — scheduled recalculation *(Sprint 4)*
 
 **Firebase Analytics**
-- [ ] Log key events: `habit_logged`, `lesson_completed`, `badge_unlocked`, `challenge_joined`
+- [x] Log key events: `habit_logged`, `lesson_completed`, `badge_unlocked`, `challenge_joined`
 
 ---
 
 ### Sprint 4 — Social, Admin & Launch Prep
-*Estimated: 2 weeks*
+*In Progress — Next*
 
 **Web — Social Sharing**
 - [ ] Shareable achievement card (canvas-generated image)

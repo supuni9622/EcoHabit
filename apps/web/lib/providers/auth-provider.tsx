@@ -7,6 +7,7 @@ import { auth, db } from '../firebase/config';
 import { useAuthStore, AppUser } from '../store/auth.store';
 import { useHabitsStore } from '../store/habits.store';
 import { useGamificationStore } from '../store/gamification.store';
+import { requestNotificationPermission, saveFCMToken } from '../services/notifications';
 
 interface AuthContextValue {
   isAuthenticated: boolean;
@@ -60,6 +61,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 }))
               );
             }
+
+            // Request FCM notification permission
+            requestNotificationPermission().then((token) => {
+              if (token) {
+                saveFCMToken(firebaseUser.uid, token);
+              }
+            }).catch(() => { /* permission denied or not supported */ });
           } else {
             // New user — set minimal data from Firebase auth
             const newUser: AppUser = {

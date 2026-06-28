@@ -1,8 +1,25 @@
 'use client';
 
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import { collection, query, where, orderBy, limit, getDocs, Timestamp } from 'firebase/firestore';
+import { db } from '../../../lib/firebase/config';
 import { useAuthStore } from '../../../lib/store/auth.store';
 import { BADGE_REQUIREMENTS } from '@ecohabit/shared';
+
+interface ReflectionEntry {
+  id: string;
+  mood: number;
+  wasteType: string;
+  note: string;
+  createdAt: Date;
+}
+
+const MOOD_EMOJIS: Record<number, string> = { 1: '😔', 2: '😐', 3: '🙂', 4: '😊', 5: '🤩' };
+const WASTE_EMOJIS: Record<string, string> = {
+  plastic: '🥤', paper: '📄', 'e-waste': '💻', organic: '🍎',
+  glass: '🍶', metal: '🥫', textile: '👗', general: '🗑️',
+};
 
 const LEVEL_TITLES: Record<number, string> = {
   1: 'Eco Beginner',
@@ -21,6 +38,34 @@ const LEVEL_THRESHOLDS = [0, 500, 1500, 3000, 5000, 10000, 20000, 35000, 50000, 
 
 export default function ProfilePage() {
   const { user } = useAuthStore();
+  const [reflections, setReflections] = useState<ReflectionEntry[]>([]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const q = query(
+      collection(db, 'reflections'),
+      where('userId', '==', user.id),
+      orderBy('createdAt', 'desc'),
+      limit(7)
+    );
+
+    getDocs(q).then((snap) => {
+      const entries: ReflectionEntry[] = snap.docs.map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          mood: data.mood as number,
+          wasteType: data.wasteType as string,
+          note: data.note as string ?? '',
+          createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
+        };
+      });
+      setReflections(entries);
+    }).catch(() => { /* silently fail */ });
+  }, [user?.id]);
 
   if (!user) return null;
 
@@ -111,6 +156,35 @@ export default function ProfilePage() {
           <p className="text-xs text-gray-400 text-center mt-3">
             Complete eco-actions to unlock badges!
           </p>
+        )}
+      </div>
+
+      {/* Recent Reflections */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <h2 className="font-semibold text-gray-800 mb-4">Recent Reflections</h2>
+        {reflections.length === 0 ? (
+          <p className="text-xs text-gray-400 text-center py-3">
+            Log a habit and share how you feel — reflections appear here!
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {reflections.map((r) => (
+              <div key={r.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                <span className="text-2xl flex-shrink-0">{MOOD_EMOJIS[r.mood] ?? '🙂'}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-base">{WASTE_EMOJIS[r.wasteType] ?? '♻️'}</span>
+                    <span className="text-xs text-gray-400">
+                      {r.createdAt.toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                    </span>
+                  </div>
+                  {r.note && (
+                    <p className="text-xs text-gray-600 truncate">{r.note.slice(0, 60)}{r.note.length > 60 ? '…' : ''}</p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 

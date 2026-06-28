@@ -7,6 +7,8 @@ import {
   orderBy,
   limit,
   getDocs,
+  getDoc,
+  doc,
   serverTimestamp,
   Timestamp,
 } from 'firebase/firestore';
@@ -62,16 +64,36 @@ async function loadChatHistory(userId: string): Promise<GeminiContent[]> {
   }
 }
 
-async function saveMessage(userId: string, content: string, role: 'user' | 'model'): Promise<void> {
+async function saveMessage(userId: string, content: string, role: 'user' | 'model'): Promise<string | null> {
   try {
-    await addDoc(collection(db, 'chatMessages'), {
+    const docRef = await addDoc(collection(db, 'chatMessages'), {
       userId,
       content,
       role,
       timestamp: serverTimestamp(),
     });
+    return docRef.id;
   } catch (err) {
     console.error('Failed to save chat message:', err);
+    return null;
+  }
+}
+
+async function getUserStreak(userId: string): Promise<string> {
+  if (!userId) return '';
+  try {
+    const userDoc = await getDoc(doc(db, 'users', userId));
+    if (!userDoc.exists()) return '';
+    const streak: number = (userDoc.data().currentStreak as number) ?? 0;
+    if (streak >= 7) {
+      return `\n\nThe user has a ${streak}-day streak! Celebrate this and encourage them to keep going.`;
+    } else if (streak === 0) {
+      return "\n\nThe user hasn't logged any actions recently. Gently motivate them to take their first step today.";
+    } else {
+      return `\n\nThe user is on a ${streak}-day streak. Encourage consistency.`;
+    }
+  } catch {
+    return '';
   }
 }
 
@@ -123,11 +145,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Build system prompt with optional recent habit context
+    // Build system prompt with optional recent habit context and streak
     let systemPrompt = ECO_SYSTEM_PROMPT;
     if (userId) {
-      const recentActivity = await getRecentHabitLogs(userId);
-      systemPrompt += recentActivity;
+      const [recentActivity, streakContext] = await Promise.all([
+        getRecentHabitLogs(userId),
+        getUserStreak(userId),
+      ]);
+      systemPrompt += recentActivity + streakContext;
     }
 
     // Load conversation history from Firestore
@@ -175,12 +200,13 @@ export async function POST(request: NextRequest) {
       "I'm having trouble responding right now. Please try again!";
 
     // Persist both messages to Firestore
+    let assistantMessageId: string | null = null;
     if (userId) {
       await saveMessage(userId, message, 'user');
-      await saveMessage(userId, responseText, 'model');
+      assistantMessageId = await saveMessage(userId, responseText, 'model');
     }
 
-    return NextResponse.json({ message: responseText });
+    return NextResponse.json({ message: responseText, messageId: assistantMessageId });
   } catch (error) {
     console.error('Chat API error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
