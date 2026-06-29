@@ -13,6 +13,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db } from '../../../../lib/firebase/config';
+import { captureError } from '../../../../lib/monitoring/sentry';
 import {
   calculateLevel,
   calculateEnvironmentalImpact,
@@ -229,6 +230,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Habit log error:', error);
+    captureError(error, { endpoint: 'habit-log' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

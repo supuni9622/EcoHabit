@@ -6,30 +6,36 @@ export class StreakManager {
    */
   static calculateCurrentStreak(user: User): number {
     if (!user.habits || user.habits.length === 0) return 0;
-    
-    const sortedHabits = user.habits.sort((a, b) => 
-      new Date(b.loggedAt).getTime() - new Date(a.loggedAt).getTime()
-    );
-    
+
+    // Deduplicate by calendar day (descending)
+    const uniqueDayMs = [...new Set(
+      user.habits.map((h) => {
+        const d = new Date(h.loggedAt);
+        d.setHours(0, 0, 0, 0);
+        return d.getTime();
+      })
+    )].sort((a, b) => b - a);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const DAY_MS = 86400000;
+
+    // First date must be today or yesterday (within 1-day grace)
+    const firstDayDiff = Math.floor((today.getTime() - uniqueDayMs[0]!) / DAY_MS);
+    if (firstDayDiff > 1) return 0;
+
     let streak = 0;
-    let currentDate = new Date();
-    currentDate.setHours(0, 0, 0, 0);
-    
-    for (const habit of sortedHabits) {
-      const habitDate = new Date(habit.loggedAt);
-      habitDate.setHours(0, 0, 0, 0);
-      
-      const daysDiff = Math.floor((currentDate.getTime() - habitDate.getTime()) / (1000 * 60 * 60 * 24));
-      
-      if (daysDiff === streak) {
+    let expectedMs = uniqueDayMs[0]!;
+
+    for (const dayMs of uniqueDayMs) {
+      if (dayMs === expectedMs) {
         streak++;
-        currentDate = new Date(habitDate);
-        currentDate.setDate(currentDate.getDate() - 1);
-      } else if (daysDiff > streak) {
+        expectedMs = dayMs - DAY_MS;
+      } else {
         break;
       }
     }
-    
+
     return streak;
   }
   
@@ -90,36 +96,29 @@ export class StreakManager {
    */
   static calculateLongestStreak(user: User): number {
     if (!user.habits || user.habits.length === 0) return 0;
-    
-    const sortedHabits = user.habits.sort((a, b) => 
-      new Date(a.loggedAt).getTime() - new Date(b.loggedAt).getTime()
-    );
-    
-    let longestStreak = 0;
-    let currentStreak = 0;
-    let lastDate: Date | null = null;
-    
-    for (const habit of sortedHabits) {
-      const habitDate = new Date(habit.loggedAt);
-      habitDate.setHours(0, 0, 0, 0);
-      
-      if (lastDate === null) {
-        currentStreak = 1;
+
+    const uniqueDayMs = [...new Set(
+      user.habits.map((h) => {
+        const d = new Date(h.loggedAt);
+        d.setHours(0, 0, 0, 0);
+        return d.getTime();
+      })
+    )].sort((a, b) => a - b); // ascending
+
+    const DAY_MS = 86400000;
+    let longest = 1;
+    let current = 1;
+
+    for (let i = 1; i < uniqueDayMs.length; i++) {
+      if (uniqueDayMs[i]! - uniqueDayMs[i - 1]! === DAY_MS) {
+        current++;
+        longest = Math.max(longest, current);
       } else {
-        const daysDiff = Math.floor((habitDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
-        
-        if (daysDiff === 1) {
-          currentStreak++;
-        } else if (daysDiff > 1) {
-          longestStreak = Math.max(longestStreak, currentStreak);
-          currentStreak = 1;
-        }
+        current = 1;
       }
-      
-      lastDate = habitDate;
     }
-    
-    return Math.max(longestStreak, currentStreak);
+
+    return longest;
   }
   
   /**

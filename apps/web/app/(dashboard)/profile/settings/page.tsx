@@ -27,9 +27,20 @@ export default function SettingsPage() {
       allowFriendRequests: true,
     }
   );
+
+  // Notification schedule settings (stored in preferences)
+  const [notifSchedule, setNotifSchedule] = useState({
+    dailyReminder: notifs.dailyReminder,
+    reminderTime: '08:00',
+    streakAlerts: notifs.streakAlerts,
+    achievements: notifs.achievementAlerts,
+  });
+
   const [language, setLanguage] = useState('en');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [savingNotifs, setSavingNotifs] = useState(false);
+  const [savedNotifs, setSavedNotifs] = useState(false);
 
   const handleSave = async () => {
     if (!user) return;
@@ -44,6 +55,41 @@ export default function SettingsPage() {
       setTimeout(() => setSaved(false), 2000);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSaveNotifications = async () => {
+    if (!user) return;
+    setSavingNotifs(true);
+    try {
+      const updatedNotifs = {
+        ...notifs,
+        dailyReminder: notifSchedule.dailyReminder,
+        streakAlerts: notifSchedule.streakAlerts,
+        achievementAlerts: notifSchedule.achievements,
+      };
+
+      await fetch('/api/users/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          preferences: {
+            notifications: {
+              ...updatedNotifs,
+              reminderTime: notifSchedule.reminderTime,
+            },
+            privacy,
+          },
+        }),
+      });
+
+      setNotifs(updatedNotifs);
+      updateUser({ preferences: { notifications: updatedNotifs, privacy } });
+      setSavedNotifs(true);
+      setTimeout(() => setSavedNotifs(false), 2000);
+    } finally {
+      setSavingNotifs(false);
     }
   };
 
@@ -72,6 +118,8 @@ export default function SettingsPage() {
       />
     </button>
   );
+
+  const REMINDER_HOURS = Array.from({ length: 17 }, (_, i) => i + 6); // 6 to 22
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
@@ -113,6 +161,85 @@ export default function SettingsPage() {
             />
           </div>
         ))}
+      </div>
+
+      {/* Notification Schedule */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="px-5 py-3 bg-gray-50 border-b border-gray-100">
+          <h2 className="font-semibold text-gray-700 text-sm">Notification Schedule</h2>
+        </div>
+
+        {savedNotifs && (
+          <div className="mx-5 mt-3 p-2 bg-green-50 border border-green-200 rounded-lg text-green-600 text-xs text-center">
+            Notification settings saved!
+          </div>
+        )}
+
+        {/* Daily reminder toggle */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
+          <div>
+            <p className="text-sm font-medium text-gray-700">Daily reminder</p>
+            <p className="text-xs text-gray-400">Get a push notification each day</p>
+          </div>
+          <Toggle
+            checked={notifSchedule.dailyReminder}
+            onChange={(v) => setNotifSchedule({ ...notifSchedule, dailyReminder: v })}
+          />
+        </div>
+
+        {/* Reminder time */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
+          <div>
+            <p className="text-sm font-medium text-gray-700">Reminder time</p>
+            <p className="text-xs text-gray-400">When to send the daily reminder</p>
+          </div>
+          <select
+            value={notifSchedule.reminderTime}
+            onChange={(e) => setNotifSchedule({ ...notifSchedule, reminderTime: e.target.value })}
+            disabled={!notifSchedule.dailyReminder}
+            className="text-sm border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-40"
+          >
+            {REMINDER_HOURS.map((h) => (
+              <option key={h} value={`${String(h).padStart(2, '0')}:00`}>
+                {h < 12 ? `${h}:00 AM` : h === 12 ? '12:00 PM' : `${h - 12}:00 PM`}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Streak alerts toggle */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
+          <div>
+            <p className="text-sm font-medium text-gray-700">Streak alerts</p>
+            <p className="text-xs text-gray-400">Warn when streak is at risk</p>
+          </div>
+          <Toggle
+            checked={notifSchedule.streakAlerts}
+            onChange={(v) => setNotifSchedule({ ...notifSchedule, streakAlerts: v })}
+          />
+        </div>
+
+        {/* Achievement notifications toggle */}
+        <div className="flex items-center justify-between px-5 py-4">
+          <div>
+            <p className="text-sm font-medium text-gray-700">Achievement notifications</p>
+            <p className="text-xs text-gray-400">Badge unlocks and level-ups</p>
+          </div>
+          <Toggle
+            checked={notifSchedule.achievements}
+            onChange={(v) => setNotifSchedule({ ...notifSchedule, achievements: v })}
+          />
+        </div>
+
+        <div className="px-5 pb-5">
+          <button
+            onClick={handleSaveNotifications}
+            disabled={savingNotifs}
+            className="w-full bg-green-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-green-700 disabled:opacity-50 transition-colors"
+          >
+            {savingNotifs ? 'Saving...' : 'Save Notification Settings'}
+          </button>
+        </div>
       </div>
 
       {/* Privacy */}

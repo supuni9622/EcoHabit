@@ -38,9 +38,9 @@ EcoHabit is a gamified waste-management & recycling PWA designed for Sri Lankan 
 | Web — Habit log | ✅ Done | Photo upload, animated points counter, edit within 24h |
 | Firebase Functions | ✅ Done | User-create + habit-log + level-up triggers + streak alert |
 | Mobile app | 🟡 Skeleton | Tab nav + placeholder screens |
-| CI/CD | ❌ Not started | No GitHub Actions yet |
+| CI/CD | 🟡 Partial | GitHub Actions CI + CD workflows added; needs Vercel/Firebase secrets |
 | Admin panel | ❌ Not started | — |
-| Tests | ❌ Not started | — |
+| Tests | 🟡 Partial | 46 unit tests for points calculator + streak manager; no integration tests yet |
 
 **TypeScript:** 0 errors across web app, shared, and firebase packages ✅
 
@@ -297,16 +297,17 @@ EcoHabit is a gamified waste-management & recycling PWA designed for Sri Lankan 
 ---
 
 ### Sprint 4 — Social, Admin & Launch Prep
-*In Progress — Next*
+*In Progress — 2026-06-29*
 
 **Web — Social Sharing**
-- [ ] Shareable achievement card (canvas-generated image)
-- [ ] Native share API + fallbacks (Twitter, WhatsApp, Instagram)
-- [ ] Branded hashtag + deep-link for new user acquisition
+- [x] Shareable achievement card (canvas-generated image) — `ShareCard.tsx`
+- [x] Native share API + fallbacks (Twitter, WhatsApp, Instagram)
+- [x] Branded hashtag + deep-link for new user acquisition (invite URL in profile)
 
 **Web — Community**
-- [ ] Friend request system (send via username/email)
-- [ ] Friends leaderboard view
+- [x] Friend request system (send via username/email) — `api/users/friends/request`, `api/users/search`
+- [x] Friends leaderboard view — leaderboard page "Friends" tab + API
+- [x] User-configurable notification schedule (reminder time, streak alerts, achievements) — settings page
 
 **Admin Panel (`apps/admin`)**
 - [ ] Admin auth (Firebase custom claims, 2FA)
@@ -316,15 +317,16 @@ EcoHabit is a gamified waste-management & recycling PWA designed for Sri Lankan 
 - [ ] Analytics dashboard (DAU, retention, feature usage)
 
 **Quality & Launch**
-- [ ] GitHub Actions CI — lint + type-check + test on PR
-- [ ] GitHub Actions CD — auto-deploy web to Vercel on merge to `main`
-- [ ] Firebase Functions deployment workflow
-- [ ] Sentry error monitoring integration
+- [x] GitHub Actions CI — lint + type-check + build + test on PR (`.github/workflows/ci.yml`)
+- [x] GitHub Actions CD — auto-deploy web to Vercel on merge to `main` (`.github/workflows/deploy-web.yml`)
+- [x] Firebase Functions deployment workflow (`.github/workflows/deploy-functions.yml`)
+- [x] Sentry error monitoring integration — placeholder wired into habit-log + chat APIs
+- [x] Unit tests for gamification engine + points calculator — 46 tests, vitest in `packages/shared`
+- [x] Bug fix: `StreakManager.calculateCurrentStreak` — fixed off-by-one that miscounted consecutive days
 - [ ] Firestore security rules audit
 - [ ] WCAG 2.1 AA accessibility audit
 - [ ] Performance audit (Lighthouse ≥ 90 score)
 - [ ] Firebase emulator suite for integration tests
-- [ ] Unit tests for gamification engine + points calculator
 
 ---
 

@@ -6,6 +6,7 @@ import { collection, query, where, orderBy, limit, getDocs, Timestamp } from 'fi
 import { db } from '../../../lib/firebase/config';
 import { useAuthStore } from '../../../lib/store/auth.store';
 import { BADGE_REQUIREMENTS } from '@ecohabit/shared';
+import ShareCard from '../../../components/gamification/ShareCard';
 
 interface ReflectionEntry {
   id: string;
@@ -13,6 +14,13 @@ interface ReflectionEntry {
   wasteType: string;
   note: string;
   createdAt: Date;
+}
+
+interface BadgeItem {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
 }
 
 const MOOD_EMOJIS: Record<number, string> = { 1: '😔', 2: '😐', 3: '🙂', 4: '😊', 5: '🤩' };
@@ -39,11 +47,11 @@ const LEVEL_THRESHOLDS = [0, 500, 1500, 3000, 5000, 10000, 20000, 35000, 50000, 
 export default function ProfilePage() {
   const { user } = useAuthStore();
   const [reflections, setReflections] = useState<ReflectionEntry[]>([]);
+  const [shareCardBadge, setShareCardBadge] = useState<BadgeItem | null>(null);
+  const [copySuccess, setCopySuccess] = useState(false);
 
   useEffect(() => {
     if (!user?.id) return;
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     const q = query(
       collection(db, 'reflections'),
@@ -80,6 +88,25 @@ export default function ProfilePage() {
   const progress = nextLevelPts > currentLevelPts
     ? Math.min(100, ((totalPoints - currentLevelPts) / (nextLevelPts - currentLevelPts)) * 100)
     : 100;
+
+  const inviteCode = user.id.slice(0, 8);
+  const inviteUrl = `https://ecohabit.app/invite/${inviteCode}`;
+
+  const handleCopyInvite = async () => {
+    await navigator.clipboard.writeText(inviteUrl);
+    setCopySuccess(true);
+    setTimeout(() => setCopySuccess(false), 2000);
+  };
+
+  const whatsappInviteUrl = `https://wa.me/?text=${encodeURIComponent(
+    `Join me on EcoHabit — track recycling, earn points & save the planet! ${inviteUrl}`
+  )}`;
+  const instagramCopyText = `Join me on EcoHabit — ${inviteUrl} #EcoHabit #Recycling #SriLanka`;
+
+  const handleInstagramShare = async () => {
+    await navigator.clipboard.writeText(instagramCopyText);
+    alert('Text copied! Paste it in your Instagram story or bio.');
+  };
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
@@ -140,14 +167,30 @@ export default function ProfilePage() {
             return (
               <div
                 key={badge.id}
-                title={isUnlocked ? `${badge.name}: ${badge.description}` : 'Locked'}
-                className={`aspect-square rounded-xl flex items-center justify-center text-2xl transition-all ${
+                className={`relative group aspect-square rounded-xl flex flex-col items-center justify-center text-2xl transition-all ${
                   isUnlocked
-                    ? 'bg-green-50 border-2 border-green-200'
+                    ? 'bg-green-50 border-2 border-green-200 cursor-pointer'
                     : 'bg-gray-100 grayscale opacity-40'
                 }`}
+                title={isUnlocked ? `${badge.name}: ${badge.description}` : 'Locked'}
               >
                 {badge.icon}
+                {isUnlocked && (
+                  <button
+                    onClick={() =>
+                      setShareCardBadge({
+                        id: badge.id,
+                        name: badge.name,
+                        icon: badge.icon,
+                        description: badge.description,
+                      })
+                    }
+                    className="absolute inset-0 w-full h-full rounded-xl opacity-0 group-hover:opacity-100 bg-green-600/80 flex items-center justify-center transition-opacity"
+                    aria-label={`Share ${badge.name}`}
+                  >
+                    <span className="text-white text-xs font-bold">Share</span>
+                  </button>
+                )}
               </div>
             );
           })}
@@ -157,6 +200,42 @@ export default function ProfilePage() {
             Complete eco-actions to unlock badges!
           </p>
         )}
+      </div>
+
+      {/* Invite Friends */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <h2 className="font-semibold text-gray-800 mb-1">Invite Friends</h2>
+        <p className="text-xs text-gray-400 mb-4">Share EcoHabit and grow the green community</p>
+
+        {/* Invite link display */}
+        <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2 border border-gray-200 mb-3">
+          <span className="flex-1 text-xs text-gray-600 truncate font-mono">{inviteUrl}</span>
+          <button
+            onClick={handleCopyInvite}
+            className={`text-xs font-medium px-3 py-1 rounded-lg transition-colors flex-shrink-0 ${
+              copySuccess ? 'bg-green-100 text-green-700' : 'bg-green-600 text-white hover:bg-green-700'
+            }`}
+          >
+            {copySuccess ? 'Copied!' : 'Copy'}
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <a
+            href={whatsappInviteUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 bg-[#25D366] text-white py-2.5 rounded-xl font-medium text-sm hover:opacity-90 transition-opacity"
+          >
+            <span>💬</span> WhatsApp
+          </a>
+          <button
+            onClick={handleInstagramShare}
+            className="flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white py-2.5 rounded-xl font-medium text-sm hover:opacity-90 transition-opacity"
+          >
+            <span>📸</span> Instagram
+          </button>
+        </div>
       </div>
 
       {/* Recent Reflections */}
@@ -192,6 +271,7 @@ export default function ProfilePage() {
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         {[
           { href: '/leaderboard', icon: '🏆', label: 'Leaderboard' },
+          { href: '/profile/friends', icon: '👥', label: 'Friends' },
           { href: '/chat', icon: '🤖', label: 'AI Eco Coach' },
           { href: '/profile/settings', icon: '⚙️', label: 'Settings' },
         ].map((item) => (
@@ -206,6 +286,15 @@ export default function ProfilePage() {
           </Link>
         ))}
       </div>
+
+      {/* Share Card Modal */}
+      {shareCardBadge && (
+        <ShareCard
+          badge={shareCardBadge}
+          user={{ displayName: user.displayName, totalPoints, level, currentStreak }}
+          onClose={() => setShareCardBadge(null)}
+        />
+      )}
     </div>
   );
 }

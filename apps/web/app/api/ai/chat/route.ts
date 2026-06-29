@@ -13,6 +13,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db } from '../../../../lib/firebase/config';
+import { captureError } from '../../../../lib/monitoring/sentry';
 
 const ECO_SYSTEM_PROMPT = `You are EcoCoach, an expert AI assistant specializing in environmental sustainability, recycling, and eco-friendly living. You provide practical, encouraging advice to help users build green habits.
 
@@ -209,6 +210,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: responseText, messageId: assistantMessageId });
   } catch (error) {
     console.error('Chat API error:', error);
+    captureError(error, { endpoint: 'ai-chat' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

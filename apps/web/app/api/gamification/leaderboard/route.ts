@@ -7,6 +7,8 @@ import {
   getDocs,
   where,
   Timestamp,
+  doc,
+  getDoc,
 } from 'firebase/firestore';
 import { db } from '../../../../lib/firebase/config';
 
@@ -29,13 +31,129 @@ function getPeriodStart(period: Period): Date | null {
   return null;
 }
 
+async function getUserData(userId: string): Promise<{
+  displayName: string;
+  avatar: string;
+  level: number;
+  streak: number;
+  badges: number;
+  isAnonymous: boolean;
+  totalPoints: number;
+} | null> {
+  try {
+    const userSnap = await getDoc(doc(db, 'users', userId));
+    if (!userSnap.exists()) return null;
+    const data = userSnap.data();
+    const isAnonymous = data.preferences?.privacy?.showOnLeaderboard === false;
+    return {
+      displayName: isAnonymous ? 'Anonymous EcoHero' : (data.displayName as string ?? 'EcoHero'),
+      avatar: isAnonymous ? '🌿' : (data.avatar as string ?? '🌱'),
+      level: data.level as number ?? 1,
+      streak: data.currentStreak as number ?? 0,
+      badges: (data.badges as string[] ?? []).length,
+      isAnonymous,
+      totalPoints: data.totalPoints as number ?? 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function getFriendIds(userId: string): Promise<string[]> {
+  const friendshipsQuery = query(
+    collection(db, 'friendships'),
+    where('userIds', 'array-contains', userId),
+    where('status', '==', 'accepted')
+  );
+  const snap = await getDocs(friendshipsQuery);
+  const friendIds: string[] = [];
+  for (const d of snap.docs) {
+    const data = d.data();
+    const userIds: string[] = data.userIds ?? [];
+    const friendId = userIds.find((id) => id !== userId);
+    if (friendId) friendIds.push(friendId);
+  }
+  return friendIds;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
     const periodParam = searchParams.get('period') ?? 'all-time';
+    const friendsOnly = searchParams.get('friendsOnly') === 'true';
     const period: Period =
       periodParam === 'weekly' || periodParam === 'monthly' ? periodParam : 'all-time';
+
+    // Friends-only leaderboard
+    if (friendsOnly && userId) {
+      const friendIds = await getFriendIds(userId);
+
+      if (friendIds.length === 0) {
+        return NextResponse.json({ entries: [], userRank: null, total: 0, period, friendsOnly: true });
+      }
+
+      // Fetch friend user data and sort by totalPoints
+      const friendDataResults = await Promise.all(friendIds.map((fid) => getUserData(fid)));
+
+      const friendEntries = friendDataResults
+        .filter((d) => d !== null)
+        .map((d, i) => ({ ...d!, userId: friendIds[i]! }))
+        .sort((a, b) => b.totalPoints - a.totalPoints)
+        .map((d, i) => ({
+          rank: i + 1,
+          userId: d.userId,
+          displayName: d.displayName,
+          avatar: d.avatar,
+          points: d.totalPoints,
+          level: d.level,
+          streak: d.streak,
+          badges: d.badges,
+          isAnonymous: d.isAnonymous,
+        }));
+
+      let userRank: number | null = null;
+      if (userId) {
+        const currentUserData = await getUserData(userId);
+        if (currentUserData) {
+          const allEntries = [
+            ...friendEntries,
+            {
+              rank: 0,
+              userId,
+              displayName: currentUserData.displayName,
+              avatar: currentUserData.avatar,
+              points: currentUserData.totalPoints,
+              level: currentUserData.level,
+              streak: currentUserData.streak,
+              badges: currentUserData.badges,
+              isAnonymous: currentUserData.isAnonymous,
+            },
+          ].sort((a, b) => b.points - a.points)
+            .map((e, i) => ({ ...e, rank: i + 1 }));
+
+          const userPos = allEntries.findIndex((e) => e.userId === userId);
+          userRank = userPos >= 0 ? allEntries[userPos]!.rank : null;
+
+          // Return only friend entries (not current user in the list unless also a friend)
+          return NextResponse.json({
+            entries: friendEntries,
+            userRank,
+            total: friendEntries.length,
+            period,
+            friendsOnly: true,
+          });
+        }
+      }
+
+      return NextResponse.json({
+        entries: friendEntries,
+        userRank,
+        total: friendEntries.length,
+        period,
+        friendsOnly: true,
+      });
+    }
 
     if (period === 'all-time') {
       // Simple all-time leaderboard from users collection
@@ -51,12 +169,12 @@ export async function GET(request: NextRequest) {
         return {
           rank: i + 1,
           userId: d.id,
-          displayName: isAnonymous ? 'Anonymous EcoHero' : (data.displayName ?? 'EcoHero'),
-          avatar: isAnonymous ? '🌿' : (data.avatar ?? '🌱'),
-          points: data.totalPoints ?? 0,
-          level: data.level ?? 1,
-          streak: data.currentStreak ?? 0,
-          badges: (data.badges ?? []).length,
+          displayName: isAnonymous ? 'Anonymous EcoHero' : (data.displayName as string ?? 'EcoHero'),
+          avatar: isAnonymous ? '🌿' : (data.avatar as string ?? '🌱'),
+          points: data.totalPoints as number ?? 0,
+          level: data.level as number ?? 1,
+          streak: data.currentStreak as number ?? 0,
+          badges: (data.badges as string[] ?? []).length,
           isAnonymous,
         };
       });
@@ -86,8 +204,8 @@ export async function GET(request: NextRequest) {
     const pointsByUser = new Map<string, number>();
     for (const d of logsSnap.docs) {
       const data = d.data();
-      const uid: string = data.userId;
-      const pts: number = data.pointsAwarded ?? 0;
+      const uid: string = data.userId as string;
+      const pts: number = data.pointsAwarded as number ?? 0;
       pointsByUser.set(uid, (pointsByUser.get(uid) ?? 0) + pts);
     }
 
@@ -121,12 +239,12 @@ export async function GET(request: NextRequest) {
           return {
             rank: i + 1,
             userId: uid,
-            displayName: isAnonymous ? 'Anonymous EcoHero' : (data.displayName ?? 'EcoHero'),
-            avatar: isAnonymous ? '🌿' : (data.avatar ?? '🌱'),
+            displayName: isAnonymous ? 'Anonymous EcoHero' : (data.displayName as string ?? 'EcoHero'),
+            avatar: isAnonymous ? '🌿' : (data.avatar as string ?? '🌱'),
             points: pts,
-            level: data.level ?? 1,
-            streak: data.currentStreak ?? 0,
-            badges: (data.badges ?? []).length,
+            level: data.level as number ?? 1,
+            streak: data.currentStreak as number ?? 0,
+            badges: (data.badges as string[] ?? []).length,
             isAnonymous,
           };
         } catch {

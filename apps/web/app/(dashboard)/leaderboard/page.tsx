@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import Link from 'next/link';
 import { useAuthStore } from '../../../lib/store/auth.store';
 
 interface LeaderboardEntry {
@@ -15,7 +16,7 @@ interface LeaderboardEntry {
   isAnonymous: boolean;
 }
 
-type Period = 'all-time' | 'weekly' | 'monthly';
+type Period = 'all-time' | 'weekly' | 'monthly' | 'friends';
 
 const MEDAL = ['🥇', '🥈', '🥉'];
 
@@ -23,6 +24,7 @@ const PERIOD_LABELS: Record<Period, string> = {
   'all-time': 'All Time',
   weekly: 'This Week',
   monthly: 'This Month',
+  friends: 'Friends',
 };
 
 export default function LeaderboardPage() {
@@ -35,7 +37,15 @@ export default function LeaderboardPage() {
   const fetchLeaderboard = useCallback(async (selectedPeriod: Period) => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ period: selectedPeriod });
+      const params = new URLSearchParams();
+
+      if (selectedPeriod === 'friends') {
+        params.set('period', 'all-time');
+        params.set('friendsOnly', 'true');
+      } else {
+        params.set('period', selectedPeriod);
+      }
+
       if (user?.id) params.set('userId', user.id);
 
       const res = await fetch(`/api/gamification/leaderboard?${params.toString()}`);
@@ -63,12 +73,12 @@ export default function LeaderboardPage() {
       </div>
 
       {/* Period toggle */}
-      <div className="flex bg-gray-100 rounded-xl p-1">
+      <div className="flex bg-gray-100 rounded-xl p-1 gap-0.5">
         {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
           <button
             key={p}
             onClick={() => setPeriod(p)}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all ${
               period === p
                 ? 'bg-white text-green-700 shadow-sm'
                 : 'text-gray-500 hover:text-gray-700'
@@ -104,6 +114,20 @@ export default function LeaderboardPage() {
         <div className="text-center py-12">
           <div className="text-4xl animate-spin mb-3">♻️</div>
           <p className="text-gray-400">Loading leaderboard...</p>
+        </div>
+      ) : period === 'friends' && entries.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="text-5xl mb-3">👥</div>
+          <p className="text-gray-500 font-medium">No friends yet</p>
+          <p className="text-gray-400 text-sm mt-1 mb-4">
+            Add friends to see your friends leaderboard!
+          </p>
+          <Link
+            href="/profile/friends"
+            className="inline-block bg-green-600 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-green-700 transition-colors"
+          >
+            Find Friends
+          </Link>
         </div>
       ) : entries.length === 0 ? (
         <div className="text-center py-12">
