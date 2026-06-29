@@ -39,7 +39,7 @@ EcoHabit is a gamified waste-management & recycling PWA designed for Sri Lankan 
 | Firebase Functions | ✅ Done | User-create + habit-log + level-up triggers + streak alert |
 | Mobile app | 🟡 Skeleton | Tab nav + placeholder screens |
 | CI/CD | 🟡 Partial | GitHub Actions CI + CD workflows added; needs Vercel/Firebase secrets |
-| Admin panel | ❌ Not started | — |
+| Admin panel | 🟡 Partial | `apps/admin` built — auth, dashboard, users, lessons, challenges, analytics; 2FA deferred |
 | Tests | 🟡 Partial | 46 unit tests for points calculator + streak manager; no integration tests yet |
 
 **TypeScript:** 0 errors across web app, shared, and firebase packages ✅
@@ -310,11 +310,14 @@ EcoHabit is a gamified waste-management & recycling PWA designed for Sri Lankan 
 - [x] User-configurable notification schedule (reminder time, streak alerts, achievements) — settings page
 
 **Admin Panel (`apps/admin`)**
-- [ ] Admin auth (Firebase custom claims, 2FA)
-- [ ] Lesson content editor
-- [ ] Challenge scheduler
-- [ ] User management table
-- [ ] Analytics dashboard (DAU, retention, feature usage)
+- [x] `apps/admin` — Next.js 14 app, runs on port 3001
+- [x] Admin auth — Firebase custom claims (`role: "admin"`) + redirect guard
+- [x] Dashboard — total users, active today, habit logs, live challenges + recent activity feed
+- [x] User management — paginated table, search by name, ban/unban toggle
+- [x] Lesson editor — list all 25 lessons, edit title/description/keyMessage/story/facts/reflection in Firestore overrides (`lessonOverrides` collection)
+- [x] Challenge scheduler — create/edit/activate/end/delete challenges with date range, waste type, points
+- [x] Analytics — 7-day DAU bar chart, waste type breakdown, KPI cards
+- [ ] 2FA for admin accounts *(Sprint 5 — low priority)*
 
 **Quality & Launch**
 - [x] GitHub Actions CI — lint + type-check + build + test on PR (`.github/workflows/ci.yml`)
