@@ -380,13 +380,14 @@ function LogForm() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Waste type selection */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm">
-          <label className="block text-sm font-medium text-gray-700 mb-3">Waste Type</label>
+        <fieldset className="bg-white rounded-2xl p-5 shadow-sm">
+          <legend className="block text-sm font-medium text-gray-700 mb-3">Waste Type</legend>
           <div className="grid grid-cols-4 gap-2">
             {WASTE_TYPES.map((wt) => (
               <button
                 key={wt.id}
                 type="button"
+                aria-pressed={wasteType === wt.id}
                 onClick={() => setWasteType(wt.id)}
                 className={`flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all ${
                   wasteType === wt.id
@@ -394,28 +395,29 @@ function LogForm() {
                     : 'border-gray-200 hover:border-green-300'
                 }`}
               >
-                <span className="text-2xl">{wt.icon}</span>
+                <span className="text-2xl" aria-hidden="true">{wt.icon}</span>
                 <span className="text-xs font-medium text-gray-700">{wt.label}</span>
                 <span className="text-xs text-green-600">+{wt.pts}pts</span>
               </button>
             ))}
           </div>
-        </div>
+        </fieldset>
 
         {/* Quantity input */}
         <div className="bg-white rounded-2xl p-5 shadow-sm">
-          <label className="block text-sm font-medium text-gray-700 mb-3">
+          <label htmlFor="quantity-slider" className="block text-sm font-medium text-gray-700 mb-3">
             Quantity (1-100)
           </label>
           <div className="flex items-center gap-4">
             <button
               type="button"
+              aria-label="Decrease quantity"
               onClick={() => setQuantity(Math.max(1, quantity - 1))}
               className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 font-bold text-xl flex items-center justify-center"
             >
-              −
+              <span aria-hidden="true">−</span>
             </button>
-            <div className="flex-1 text-center">
+            <div className="flex-1 text-center" aria-live="polite" aria-atomic="true">
               <div className="text-5xl font-bold text-gray-800">{quantity}</div>
               <div className="text-xs text-gray-500 mt-1">
                 {quantity === 1 ? 'item' : 'items'}
@@ -423,13 +425,15 @@ function LogForm() {
             </div>
             <button
               type="button"
+              aria-label="Increase quantity"
               onClick={() => setQuantity(Math.min(100, quantity + 1))}
               className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 font-bold text-xl flex items-center justify-center"
             >
-              +
+              <span aria-hidden="true">+</span>
             </button>
           </div>
           <input
+            id="quantity-slider"
             type="range"
             min={1}
             max={100}
@@ -441,10 +445,11 @@ function LogForm() {
 
         {/* Optional notes */}
         <div className="bg-white rounded-2xl p-5 shadow-sm">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="habit-notes" className="block text-sm font-medium text-gray-700 mb-2">
             Notes (optional)
           </label>
           <textarea
+            id="habit-notes"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Where did you recycle? Any notes..."
@@ -452,14 +457,14 @@ function LogForm() {
             rows={3}
             className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-500"
           />
-          <p className="text-xs text-gray-400 mt-1">{notes.length}/200</p>
+          <p className="text-xs text-gray-400 mt-1" aria-live="polite">{notes.length}/200</p>
         </div>
 
         {/* Photo upload */}
         <div className="bg-white rounded-2xl p-5 shadow-sm">
-          <label className="block text-sm font-medium text-gray-700 mb-3">
+          <p className="block text-sm font-medium text-gray-700 mb-3">
             Add Photo (optional)
-          </label>
+          </p>
           {photoPreview ? (
             <div className="relative">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -471,9 +476,10 @@ function LogForm() {
               <button
                 type="button"
                 onClick={removePhoto}
+                aria-label="Remove selected photo"
                 className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center text-sm font-bold hover:bg-red-600"
               >
-                ×
+                <span aria-hidden="true">×</span>
               </button>
             </div>
           ) : (
@@ -482,7 +488,7 @@ function LogForm() {
               onClick={() => photoInputRef.current?.click()}
               className="w-full h-24 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-green-400 hover:bg-green-50 transition-colors text-gray-400 hover:text-green-600"
             >
-              <span className="text-2xl">📷</span>
+              <span className="text-2xl" aria-hidden="true">📷</span>
               <span className="text-xs font-medium">Tap to add a photo (max 5 MB)</span>
             </button>
           )}
@@ -490,14 +496,15 @@ function LogForm() {
             ref={photoInputRef}
             type="file"
             accept="image/*"
+            aria-label="Upload photo"
             onChange={handlePhotoChange}
             className="hidden"
           />
           {photoError && (
-            <p className="text-xs text-red-500 mt-2">{photoError}</p>
+            <p role="alert" className="text-xs text-red-500 mt-2">{photoError}</p>
           )}
           {uploadProgress && (
-            <p className="text-xs text-green-600 mt-2 animate-pulse">Uploading photo...</p>
+            <p aria-live="polite" className="text-xs text-green-600 mt-2 animate-pulse">Uploading photo...</p>
           )}
         </div>
 

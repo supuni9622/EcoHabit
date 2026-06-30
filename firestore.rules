@@ -1,56 +1,177 @@
 rules_version = '2';
+
+// ============================================================
+// EcoHabit Firestore Security Rules
+// ============================================================
+// Architecture note: Next.js API routes use the Firebase CLIENT
+// SDK (not Admin SDK), so server-side writes appear as
+// unauthenticated requests to these rules. Collections written
+// by API routes must allow unauthenticated creates with strict
+// data-shape validation as the primary guard.
+//
+// TODO: Migrate API routes to Firebase Admin SDK so all
+// server-side requests carry a verified UID and these open
+// create rules can be tightened to isSignedIn() checks.
+// ============================================================
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users can read and write their own data
+
+    // ── Helpers ─────────────────────────────────────────────
+    function isSignedIn()   { return request.auth != null; }
+    function isOwner(uid)   { return isSignedIn() && request.auth.uid == uid; }
+    function isAdmin()      { return isSignedIn() && request.auth.token.role == 'admin'; }
+    function incoming()     { return request.resource.data; }
+
+    // ── users ────────────────────────────────────────────────
+    // Read: any authenticated user (leaderboard, friend search,
+    //       profile views all query this from the browser).
+    // Write: owner (onboarding, settings, lessons, profile updates
+    //        are all direct browser writes) + admin for ban/unban.
+    // ─────────────────────────────────────────────────────────
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if isSignedIn();
+      allow create: if isOwner(userId)
+        && incoming().keys().hasAll(['displayName', 'email'])
+        && incoming().displayName is string
+        && incoming().email is string;
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
     }
-    
-    // Habit logs are user-specific
+
+    // ── habitLogs ────────────────────────────────────────────
+    // Created by /api/habits/log (server-side client SDK = no
+    // auth context). Allow unauthenticated creates with strict
+    // field + value validation.
+    // Leaderboard period aggregation also reads unauthenticated
+    // (same API route limitation — see TODO above).
+    // ─────────────────────────────────────────────────────────
     match /habitLogs/{logId} {
-      allow read, write: if request.auth != null && 
-        resource.data.userId == request.auth.uid;
+      allow read: if isSignedIn()
+        ? (resource.data.userId == request.auth.uid || isAdmin())
+        : true; // unauthenticated server-side leaderboard reads
+
+      allow create: if incoming().keys().hasAll(['userId', 'wasteType', 'quantity', 'pointsAwarded', 'loggedAt'])
+        && incoming().userId is string
+        && incoming().wasteType in ['plastic', 'paper', 'e-waste', 'organic', 'glass', 'metal', 'textile', 'general', 'other']
+        && incoming().quantity is number
+        && incoming().quantity > 0
+        && incoming().quantity <= 100
+        && incoming().pointsAwarded is number
+        && incoming().pointsAwarded >= 0
+        && incoming().pointsAwarded <= 500;
+
+      allow update: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
-    
-    // Lessons are public read-only
-    match /lessons/{lessonId} {
+
+    // ── chatMessages ─────────────────────────────────────────
+    // Chat history is read directly in the browser (authenticated).
+    // New messages written by /api/ai/chat (server-side, no auth).
+    // ─────────────────────────────────────────────────────────
+    match /chatMessages/{messageId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if incoming().keys().hasAll(['userId', 'role', 'content'])
+        && incoming().userId is string
+        && incoming().role in ['user', 'assistant']
+        && incoming().content is string
+        && incoming().content.size() <= 4000;
+      allow update, delete: if false; // immutable
+    }
+
+    // ── reflections ──────────────────────────────────────────
+    // Read directly by the profile page (authenticated browser).
+    // Created by /api/habits/log (server-side, no auth).
+    // ─────────────────────────────────────────────────────────
+    match /reflections/{reflectionId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if incoming().keys().hasAll(['userId', 'mood', 'note', 'createdAt'])
+        && incoming().userId is string
+        && incoming().mood is number
+        && incoming().mood >= 1
+        && incoming().mood <= 5
+        && incoming().note is string
+        && incoming().note.size() <= 2000;
+      allow update: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow delete: if false;
+    }
+
+    // ── friendships ──────────────────────────────────────────
+    // Participants read their own friendships (authenticated browser).
+    // Created by /api/users/friends/request (server-side, no auth).
+    // Accepted by /api/users/friends/accept (server-side, no auth).
+    // ─────────────────────────────────────────────────────────
+    match /friendships/{friendshipId} {
+      allow read: if isSignedIn() && request.auth.uid in resource.data.userIds;
+      allow create: if incoming().keys().hasAll(['userIds', 'status', 'requestedBy'])
+        && incoming().userIds is list
+        && incoming().userIds.size() == 2
+        && incoming().status == 'pending'
+        && incoming().requestedBy is string;
+      // Accept endpoint only updates status + acceptedAt
+      allow update: if incoming().diff(resource.data).affectedKeys()
+        .hasOnly(['status', 'acceptedAt']);
+      allow delete: if isSignedIn() && request.auth.uid in resource.data.userIds;
+    }
+
+    // ── challenges ───────────────────────────────────────────
+    // Public read (challenge list shown to all users).
+    // Write only via admin panel (role: "admin" custom claim).
+    // ─────────────────────────────────────────────────────────
+    match /challenges/{challengeId} {
       allow read: if true;
-      allow write: if request.auth != null && 
-        request.auth.token.admin == true;
+      allow create, update, delete: if isAdmin();
     }
-    
-    // Badges are public read-only
-    match /badges/{badgeId} {
+
+    // ── lessonOverrides ──────────────────────────────────────
+    // Admin writes content overrides; web app reads to supplement
+    // hardcoded lesson data.
+    // ─────────────────────────────────────────────────────────
+    match /lessonOverrides/{lessonId} {
       allow read: if true;
-      allow write: if request.auth != null && 
-        request.auth.token.admin == true;
+      allow write: if isAdmin();
     }
-    
-    // Leaderboard is public read-only
+
+    // ── leaderboard (computed cache) ─────────────────────────
+    // Written by scheduled Cloud Function; public read.
+    // ─────────────────────────────────────────────────────────
     match /leaderboard/{entryId} {
       allow read: if true;
-      allow write: if request.auth != null && 
-        request.auth.token.admin == true;
+      allow write: if isAdmin();
     }
-    
-    // Analytics are user-specific
-    match /analytics/{analyticsId} {
-      allow read, write: if request.auth != null && 
-        resource.data.userId == request.auth.uid;
+
+    // ── analytics events ─────────────────────────────────────
+    match /analytics/{eventId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if incoming().userId is string && incoming().eventName is string;
+      allow update, delete: if false;
     }
-    
-    // Community posts are public read, user write
-    match /communityPosts/{postId} {
-      allow read: if true;
-      allow write: if request.auth != null && 
-        resource.data.userId == request.auth.uid;
-    }
-    
-    // Recycling locations are public read-only
+
+    // ── recyclingLocations ───────────────────────────────────
     match /recyclingLocations/{locationId} {
       allow read: if true;
-      allow write: if request.auth != null && 
-        request.auth.token.admin == true;
+      allow write: if isAdmin();
+    }
+
+    // ── badges (static reference data) ───────────────────────
+    match /badges/{badgeId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ── communityPosts ───────────────────────────────────────
+    match /communityPosts/{postId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && incoming().userId == request.auth.uid
+        && incoming().content is string
+        && incoming().content.size() <= 1000;
+      allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // ── Deny everything else ─────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

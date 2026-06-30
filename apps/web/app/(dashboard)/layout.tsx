@@ -68,19 +68,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <main className="flex-1 overflow-y-auto pb-24">{children}</main>
 
       {/* Bottom navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40">
+      <nav aria-label="Main navigation" className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40">
         <div className="max-w-lg mx-auto flex items-center justify-around py-2">
           {NAV_ITEMS.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive = pathname === item.href || (item.href !== '/home' && pathname.startsWith(item.href));
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={isActive ? 'page' : undefined}
                 className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors ${
                   isActive ? 'text-green-600' : 'text-gray-500 hover:text-green-500'
                 }`}
               >
-                <span className="text-2xl">{item.icon}</span>
+                <span className="text-2xl" aria-hidden="true">{item.icon}</span>
                 <span className={`text-xs font-medium ${isActive ? 'text-green-600' : 'text-gray-500'}`}>
                   {item.label}
                 </span>

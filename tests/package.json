@@ -1,0 +1,19 @@
+{
+  "name": "@ecohabit/tests",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:rules": "vitest run firestore-rules"
+  },
+  "dependencies": {
+    "@firebase/rules-unit-testing": "^3.0.0",
+    "firebase": "^10.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.6.1"
+  }
+}

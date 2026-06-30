@@ -151,21 +151,25 @@ export default function ShareCard({ badge, user, onClose }: ShareCardProps) {
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="share-card-title"
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ backdropFilter: 'blur(8px)', backgroundColor: 'rgba(0,0,0,0.6)' }}
     >
       <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full overflow-hidden">
         {/* Hidden canvas for drawing */}
-        <canvas ref={canvasRef} width={600} height={400} className="hidden" />
+        <canvas ref={canvasRef} width={600} height={400} className="hidden" aria-hidden="true" />
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3">
-          <h2 className="font-bold text-gray-800 text-lg">Share Achievement</h2>
+          <h2 id="share-card-title" className="font-bold text-gray-800 text-lg">Share Achievement</h2>
           <button
             onClick={onClose}
+            aria-label="Close share dialog"
             className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors"
           >
-            ✕
+            <span aria-hidden="true">✕</span>
           </button>
         </div>
 

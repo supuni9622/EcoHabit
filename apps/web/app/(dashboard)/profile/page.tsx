@@ -1,12 +1,16 @@
 'use client';
 
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useState, useEffect } from 'react';
 import { collection, query, where, orderBy, limit, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '../../../lib/firebase/config';
 import { useAuthStore } from '../../../lib/store/auth.store';
 import { BADGE_REQUIREMENTS } from '@ecohabit/shared';
-import ShareCard from '../../../components/gamification/ShareCard';
+
+const ShareCard = dynamic(() => import('../../../components/gamification/ShareCard'), {
+  ssr: false,
+});
 
 interface ReflectionEntry {
   id: string;

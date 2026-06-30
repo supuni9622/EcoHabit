@@ -14,3 +14,4 @@ export { onLevelUp } from './triggers/gamification/on-level-up';
 export { generateDailyChallenge } from './scheduled/daily-challenges';
 export { checkStreakAlerts } from './scheduled/streak-alert';
 export { sendDailyReminder } from './scheduled/daily-reminder';
+export { updateLeaderboard } from './scheduled/leaderboard-update';
